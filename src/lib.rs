@@ -14,14 +14,17 @@
 //! and `BLOB` (`Vec<u8>`). Corresponding rust types are inside brackets.
 //!
 //! Some types employ non-trivial handling, these are described below:
+//!
 //! * Serialization of `u64` will fail if it can't be represented by `i64` due to sqlite limitations.
 //! * Simple `enum`s will be serialized as strings so:
+//!
 //!   ```
 //!   enum Gender {
 //!      M,
 //!      F,
 //!   }
 //!   ```
+//!
 //!   will have two possible `TEXT` options in the database "M" and "F". Deserialization into `enum`
 //!   from `TEXT` is also supported.
 //! * `bool`s are serialized as `INTEGER`s 0 or 1, can be deserialized from `INTEGER` and `REAL` where
