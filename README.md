@@ -28,14 +28,17 @@ SQLite only supports 5 types: `NULL` (`None`), `INTEGER` (`i64`), `REAL` (`f64`)
 and `BLOB` (`Vec<u8>`). Corresponding rust types are inside brackets.
 
 Some types employ non-trivial handling, these are described below:
+
 * Serialization of `u64` will fail if it can't be represented by `i64` due to sqlite limitations.
 * Simple `enum`s will be serialized as strings so:
+
   ```
   enum Gender {
      M,
      F,
   }
   ```
+
   will have two possible `TEXT` options in the database "M" and "F". Deserialization into `enum`
   from `TEXT` is also supported.
 * `bool`s are serialized as `INTEGER`s 0 or 1, can be deserialized from `INTEGER` and `REAL` where
@@ -66,16 +69,39 @@ fn main() {
    let connection = rusqlite::Connection::open_in_memory().unwrap();
    connection.execute("CREATE TABLE example (id INT, name TEXT)", &[]).unwrap();
 
+   // using structure to generate named bound query arguments
    let row1 = Example{ id: 1, name: "first name".into() };
    connection.execute_named("INSERT INTO example (id, name) VALUES (:id, :name)", &serde_rusqlite::to_params_named(&row1).unwrap().to_slice()).unwrap();
 
+   // using tuple to generate positional bound query arguments
    let row2 = (2, "second name");
    connection.execute("INSERT INTO example (id, name) VALUES (?, ?)", &serde_rusqlite::to_params(&row2).unwrap().to_slice()).unwrap();
 
+   // deserializing data using query() and from_rows()
+   let mut statement = connection.prepare("SELECT * FROM example").unwrap();
+   let columns = serde_rusqlite::columns_from_statement(&statement);
+   let mut res = serde_rusqlite::from_rows::<Example>(statement.query(&[]).unwrap(), &columns);
+   assert_eq!(res.next().unwrap(), row1);
+   assert_eq!(res.next().unwrap(), Example{ id: 2, name: "second name".into() });
+
+   // deserializing data using query_map() and from_row()
    let mut statement = connection.prepare("SELECT * FROM example").unwrap();
    let columns = serde_rusqlite::columns_from_statement(&statement);
    let mut rows = statement.query_map(&[], |row| serde_rusqlite::from_row::<Example>(row, &columns).unwrap()).unwrap();
    assert_eq!(rows.next().unwrap().unwrap(), row1);
    assert_eq!(rows.next().unwrap().unwrap(), Example{ id: 2, name: "second name".into() });
+
+   // deserializing data using query() and from_rows_ref()
+   let mut statement = connection.prepare("SELECT * FROM example").unwrap();
+   let columns = serde_rusqlite::columns_from_statement(&statement);
+   let mut rows = statement.query(&[]).unwrap();
+   {
+      // only first record is deserialized here
+      let mut res = serde_rusqlite::from_rows_ref::<Example>(&mut rows, &columns);
+      assert_eq!(res.next().unwrap(), row1);
+   }
+   // the second record is deserialized using the original Rows iterator
+   assert_eq!(serde_rusqlite::from_row::<Example>(&rows.next().unwrap().unwrap(), &columns).unwrap(), Example{ id: 2, name: "second name".into() });
+
 }
 ```
