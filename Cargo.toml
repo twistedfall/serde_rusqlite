@@ -1,6 +1,6 @@
 [package]
 name = "serde_rusqlite"
-version = "0.11.0"
+version = "0.11.1"
 description = "Serialize/deserialize rusqlite rows"
 keywords = ["serde", "sqlite", "rusqlite", "serialization", "deserialization"]
 categories = ["database", "encoding", ]
@@ -15,5 +15,6 @@ rusqlite = "0.12"
 serde = "1.0"
 
 [dev-dependencies]
+matches = "0.1"
 serde_bytes = "0.10"
 serde_derive = "1.0"

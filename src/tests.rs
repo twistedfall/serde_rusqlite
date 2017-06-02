@@ -29,6 +29,13 @@ fn test_values<S: serde::Serialize, D: serde::de::DeserializeOwned + PartialEq +
 	test_values_with_cmp_fn::<_, _, &Fn(&D, &D) -> bool>(db_type, value_ser, value_de, None)
 }
 
+fn test_ser_err<S: serde::Serialize, F: Fn(&super::Error) -> bool>(value: &S, err_check_fn: F) {
+	match super::to_params(value) {
+		Err(e) => assert!(err_check_fn(&e), "Error raised was not of the correct type, got: {}", e),
+		_ => panic!("Error was not raised"),
+	}
+}
+
 fn test_values_with_cmp_fn<S, D, F>(db_type: &str, value_ser: &S, value_de: &D, comparison_fn: Option<F>)
 	where
 		S: serde::Serialize,
@@ -71,7 +78,7 @@ fn test_uint() {
 	test_value_same("INT CHECK(typeof(test_column) == 'integer')", &7162u16);
 	test_value_same("INT CHECK(typeof(test_column) == 'integer')", &98172983_u32);
 	test_value_same("INT CHECK(typeof(test_column) == 'integer')", &98169812698712987_u64);
-	//	test_value("INT", u64::max_value()); // todo
+	test_ser_err(&u64::max_value(), |err| matches!(*err, super::Error(super::ErrorKind::ValueTooLarge(_), _)));
 }
 
 #[test]

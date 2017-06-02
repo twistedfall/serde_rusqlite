@@ -94,6 +94,9 @@
 
 #[macro_use]
 extern crate error_chain;
+#[cfg(test)]
+#[macro_use]
+extern crate matches;
 extern crate rusqlite;
 #[macro_use]
 extern crate serde;
