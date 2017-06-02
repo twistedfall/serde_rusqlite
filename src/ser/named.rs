@@ -11,7 +11,7 @@ use self::serde::ser;
 pub struct NamedSliceSerializer(pub NamedParamSlice);
 
 impl NamedSliceSerializer {
-	pub fn new() -> NamedSliceSerializer {
+	pub fn new() -> Self {
 		NamedSliceSerializer(NamedParamSlice::from(Vec::new()))
 	}
 }

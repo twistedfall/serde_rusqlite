@@ -26,7 +26,7 @@ macro_rules! forward_tosql {
 pub struct PositionalSliceSerializer(pub PositionalParamSlice);
 
 impl PositionalSliceSerializer {
-	pub fn new() -> PositionalSliceSerializer {
+	pub fn new() -> Self {
 		PositionalSliceSerializer(PositionalParamSlice::from(Vec::new()))
 	}
 }
