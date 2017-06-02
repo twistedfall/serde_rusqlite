@@ -19,7 +19,7 @@ macro_rules! forward_to_row_value_deserializer {
 
 /// Deserializer for `rusqlite::Row`
 ///
-/// Usually you don't use it directly, but via the crate's `from_row` function. Check the crate documentation for example.
+/// You shouldn't use it directly, but via the crate's `from_row()` function. Check the crate documentation for example.
 pub struct RowDeserializer<'de> {
 	row: &'de rusqlite::Row<'de, 'de>,
 	columns: &'de [String],

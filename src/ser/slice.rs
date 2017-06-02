@@ -7,7 +7,7 @@ use std::ops::{Deref, DerefMut};
 /// Stores positional bound query arguments
 ///
 /// This `struct` stores data for passing as argument slice to positional query functions of rusqlite.
-/// To get the instance call crate's `to_params` function.
+/// To get the instance call crate's `to_params()` function.
 pub struct PositionalParamSlice(Vec<Box<rusqlite::types::ToSql>>);
 
 impl PositionalParamSlice {
@@ -44,8 +44,8 @@ impl DerefMut for PositionalParamSlice {
 
 /// Stores named bound query arguments
 ///
-/// This `struct` stores data for passing as argument slice to `*_named` query functions of rusqlite.
-/// To get the instance call crate's `to_named_params` function.
+/// This `struct` stores data for passing as argument slice to `*_named()` query functions of rusqlite.
+/// To get the instance call crate's `to_named_params()` function.
 pub struct NamedParamSlice(Vec<(String, Box<rusqlite::types::ToSql>)>);
 
 impl NamedParamSlice {

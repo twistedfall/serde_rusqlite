@@ -7,7 +7,7 @@ use self::serde::ser;
 
 /// Serializer into `NamedParamSlice`
 ///
-/// Usually you don't use it directly, but via the crate's `to_params_named` function. Check the crate documentation for example.
+/// You shouldn't use it directly, but via the crate's `to_params_named()` function. Check the crate documentation for example.
 pub struct NamedSliceSerializer(pub NamedParamSlice);
 
 impl NamedSliceSerializer {

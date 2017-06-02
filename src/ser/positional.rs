@@ -22,7 +22,7 @@ macro_rules! forward_tosql {
 
 /// Serializer into `PositionalParamSlice`
 ///
-/// Usually you don't use it directly, but via the crate's `to_params` function. Check the crate documentation for example.
+/// You shouldn't use it directly, but via the crate's `to_params()` function. Check the crate documentation for example.
 pub struct PositionalSliceSerializer(pub PositionalParamSlice);
 
 impl PositionalSliceSerializer {

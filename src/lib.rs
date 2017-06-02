@@ -55,17 +55,40 @@
 //!    let connection = rusqlite::Connection::open_in_memory().unwrap();
 //!    connection.execute("CREATE TABLE example (id INT, name TEXT)", &[]).unwrap();
 //!
+//!    // using structure to generate named bound query arguments
 //!    let row1 = Example{ id: 1, name: "first name".into() };
 //!    connection.execute_named("INSERT INTO example (id, name) VALUES (:id, :name)", &serde_rusqlite::to_params_named(&row1).unwrap().to_slice()).unwrap();
 //!
+//!    // using tuple to generate positional bound query arguments
 //!    let row2 = (2, "second name");
 //!    connection.execute("INSERT INTO example (id, name) VALUES (?, ?)", &serde_rusqlite::to_params(&row2).unwrap().to_slice()).unwrap();
 //!
+//!    // deserializing data using query() and from_rows()
+//!    let mut statement = connection.prepare("SELECT * FROM example").unwrap();
+//!    let columns = serde_rusqlite::columns_from_statement(&statement);
+//!    let mut res = serde_rusqlite::from_rows::<Example>(statement.query(&[]).unwrap(), &columns);
+//!    assert_eq!(res.next().unwrap(), row1);
+//!    assert_eq!(res.next().unwrap(), Example{ id: 2, name: "second name".into() });
+//!
+//!    // deserializing data using query_map() and from_row()
 //!    let mut statement = connection.prepare("SELECT * FROM example").unwrap();
 //!    let columns = serde_rusqlite::columns_from_statement(&statement);
 //!    let mut rows = statement.query_map(&[], |row| serde_rusqlite::from_row::<Example>(row, &columns).unwrap()).unwrap();
 //!    assert_eq!(rows.next().unwrap().unwrap(), row1);
 //!    assert_eq!(rows.next().unwrap().unwrap(), Example{ id: 2, name: "second name".into() });
+//!
+//!    // deserializing data using query() and from_rows_ref()
+//!    let mut statement = connection.prepare("SELECT * FROM example").unwrap();
+//!    let columns = serde_rusqlite::columns_from_statement(&statement);
+//!    let mut rows = statement.query(&[]).unwrap();
+//!    {
+//!       // only first record is deserialized here
+//!       let mut res = serde_rusqlite::from_rows_ref::<Example>(&mut rows, &columns);
+//!       assert_eq!(res.next().unwrap(), row1);
+//!    }
+//!    // the second record is deserialized using the original Rows iterator
+//!    assert_eq!(serde_rusqlite::from_row::<Example>(&rows.next().unwrap().unwrap(), &columns).unwrap(), Example{ id: 2, name: "second name".into() });
+//!
 //! }
 //! ```
 
@@ -85,11 +108,49 @@ pub mod ser;
 mod tests;
 
 pub use de::RowDeserializer;
-pub use ser::{NamedParamSlice, NamedSliceSerializer, PositionalParamSlice, PositionalSliceSerializer};
-
 pub use error::{Error, ErrorKind, Result};
+pub use ser::{NamedParamSlice, NamedSliceSerializer, PositionalParamSlice, PositionalSliceSerializer};
+use std::marker;
 
-/// Returns column names of the statement the way `from_raw()` expects them
+/// Iterator to automatically deserialize each row from owned `rusqlite::Rows` into `D: serde::Deserialize`
+pub struct DeserRows<'rows, D> {
+	rows: rusqlite::Rows<'rows>,
+	columns: &'rows [String],
+	d: marker::PhantomData<*const D>,
+}
+
+impl<'rows, D: serde::de::DeserializeOwned> Iterator for DeserRows<'rows, D> {
+	type Item = D;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		if let Some(Ok(row)) = self.rows.next() {
+			from_row(&row, self.columns).ok()
+		} else {
+			None
+		}
+	}
+}
+
+/// Iterator to automatically deserialize each row from borrowed `rusqlite::Rows` into `D: serde::Deserialize`
+pub struct DeserRowsRef<'rows, 'stmt: 'rows, D> {
+	rows: &'rows mut rusqlite::Rows<'stmt>,
+	columns: &'rows [String],
+	d: marker::PhantomData<*const D>,
+}
+
+impl<'rows, 'stmt, D: serde::de::DeserializeOwned> Iterator for DeserRowsRef<'rows, 'stmt, D> {
+	type Item = D;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		if let Some(Ok(row)) = self.rows.next() {
+			from_row(&row, self.columns).ok()
+		} else {
+			None
+		}
+	}
+}
+
+/// Returns column names of the statement the way `from_row()` and `from_rows()` expect them
 ///
 /// This function is needed because by default `column_names()` returns `Vec<&str>` which
 /// ties it to the lifetime of the `Statement`. This way we won't be able to run for example
@@ -99,24 +160,41 @@ pub fn columns_from_statement(stmt: &rusqlite::Statement) -> Vec<String> {
 	stmt.column_names().into_iter().map(str::to_owned).collect()
 }
 
-/// Deserialize any instance of `T: serde::Deserialize` from `rusqlite::Row`
-pub fn from_row<'row, T: serde::de::DeserializeOwned>(row: &'row rusqlite::Row, columns: &'row [String]) -> Result<T> {
-	T::deserialize(RowDeserializer::from_row(row, columns))
+/// Deserializes any instance of `D: serde::Deserialize` from `rusqlite::Row`
+///
+/// You should use this function in the closure you supply to `query_map()`
+pub fn from_row<'row, D: serde::de::DeserializeOwned>(row: &'row rusqlite::Row, columns: &'row [String]) -> Result<D> {
+	D::deserialize(RowDeserializer::from_row(row, columns))
 }
 
-/// Serialize an instalce of `T: serde::Serialize` into structure for positional bound query arguments
+/// Returns iterator that owns `rusqlite::Rows` and deserializes all records from it into instances of `D: serde::Deserialize`
+///
+/// This function covers most of the use cases and is easier to use than the alternative `from_rows_ref()`.
+pub fn from_rows<'rows, D: serde::de::DeserializeOwned>(rows: rusqlite::Rows<'rows>, columns: &'rows [String]) -> DeserRows<'rows, D> {
+	DeserRows { rows, columns, d: marker::PhantomData }
+}
+
+/// Returns iterator that borrows `rusqlite::Rows` and deserializes all records from it into instances of `D: serde::Deserialize`
+///
+/// Use this function instead of `from_rows()` when you still need iterator with the remaining rows after
+/// deserializing some of them.
+pub fn from_rows_ref<'rows, 'stmt, D: serde::de::DeserializeOwned>(rows: &'rows mut rusqlite::Rows<'stmt>, columns: &'rows [String]) -> DeserRowsRef<'rows, 'stmt, D> {
+	DeserRowsRef { rows, columns, d: marker::PhantomData }
+}
+
+/// Serializes an instance of `S: serde::Serialize` into structure for positional bound query arguments
 ///
 /// To get the slice suitable for supplying to `query()` or `execute()` call `to_slice()` on the `Ok` result and
 /// borrow it.
-pub fn to_params<T: serde::Serialize>(obj: T) -> Result<PositionalParamSlice> {
+pub fn to_params<S: serde::Serialize>(obj: S) -> Result<PositionalParamSlice> {
 	obj.serialize(PositionalSliceSerializer::new())
 }
 
-/// Serialize an instalce of `T: serde::Serialize` into structure for named bound query arguments
+/// Serializes an instance of `S: serde::Serialize` into structure for named bound query arguments
 ///
 /// To get the slice suitable for supplying to `query_named()` or `execute_named()` call `to_slice()` on the `Ok` result
 /// and borrow it.
-pub fn to_params_named<T: serde::Serialize>(obj: T) -> Result<NamedParamSlice> {
+pub fn to_params_named<S: serde::Serialize>(obj: S) -> Result<NamedParamSlice> {
 	obj.serialize(NamedSliceSerializer::new())
 }
 
