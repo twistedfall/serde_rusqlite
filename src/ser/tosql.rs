@@ -6,13 +6,13 @@ use super::blob::BlobSerializer;
 use self::serde::ser;
 
 macro_rules! tosql_ser {
-	($fn:ident, &$type:ty) => {
-		fn $fn(self, v: &$type) -> Result<Self::Ok> {
+	($fun:ident, &$type:ty) => {
+		fn $fun(self, v: &$type) -> Result<Self::Ok> {
 			Ok(Box::new(v.to_owned()))
 		}
 	};
-	($fn:ident, $type:ty) => {
-		fn $fn(self, v: $type) -> Result<Self::Ok> {
+	($fun:ident, $type:ty) => {
+		fn $fun(self, v: $type) -> Result<Self::Ok> {
 			Ok(Box::new(v))
 		}
 	};

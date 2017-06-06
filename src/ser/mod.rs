@@ -1,6 +1,6 @@
 macro_rules! ser_unimpl {
-	($fn:ident, $type:ty) => {
-		fn $fn(self, _v: $type) -> Result<Self::Ok> {
+	($fun:ident, $type:ty) => {
+		fn $fun(self, _v: $type) -> Result<Self::Ok> {
 			Err(Error::ser_unsupported(stringify!($type)))
 		}
 	}

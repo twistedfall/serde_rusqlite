@@ -6,15 +6,15 @@ use super::tosql::ToSqlSerializer;
 use self::serde::ser;
 
 macro_rules! forward_tosql {
-	($fn:ident, $type:ty) => {
-		fn $fn(mut self, v: $type) -> Result<Self::Ok> {
-			self.0.push(ToSqlSerializer.$fn(v)?);
+	($fun:ident, $type:ty) => {
+		fn $fun(mut self, v: $type) -> Result<Self::Ok> {
+			self.0.push(ToSqlSerializer.$fun(v)?);
 			Ok(self.0)
 		}
 	};
-	($fn:ident) => {
-		fn $fn(mut self) -> Result<Self::Ok> {
-			self.0.push(ToSqlSerializer.$fn()?);
+	($fun:ident) => {
+		fn $fun(mut self) -> Result<Self::Ok> {
+			self.0.push(ToSqlSerializer.$fun()?);
 			Ok(self.0)
 		}
 	};

@@ -8,10 +8,10 @@ use self::serde::de::IntoDeserializer;
 use std::{f32, f64};
 
 macro_rules! forward_to_row_value_deserializer {
-	($($fn:ident)*) => {
+	($($fun:ident)*) => {
 		$(
-			fn $fn<V: de::Visitor<'de>>(self, visitor: V) -> Result<V::Value> {
-				self.row_value().$fn(visitor)
+			fn $fun<V: de::Visitor<'de>>(self, visitor: V) -> Result<V::Value> {
+				self.row_value().$fun(visitor)
 			}
 		)*
 	}
