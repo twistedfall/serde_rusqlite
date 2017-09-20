@@ -30,7 +30,7 @@ impl<'de> RowDeserializer<'de> {
 		Self { row, columns }
 	}
 
-	fn row_value(&self) -> RowValue<'de> {
+	fn row_value(&self) -> RowValue<'de, i32> {
 		RowValue { row: self.row, idx: 0 }
 	}
 }
@@ -78,14 +78,14 @@ impl<'de> de::Deserializer<'de> for RowDeserializer<'de> {
 	}
 }
 
-struct RowValue<'row> {
-	idx: usize,
+struct RowValue<'row, RI> {
+	idx: RI,
 	row: &'row rusqlite::Row<'row, 'row>,
 }
 
-impl<'de> RowValue<'de> {
+impl<'de, RI: rusqlite::RowIndex + Copy> RowValue<'de, RI> {
 	fn value<T: rusqlite::types::FromSql>(&self) -> Result<T> {
-		self.row.get_checked(self.idx as i32).map_err(Error::from)
+		self.row.get_checked(self.idx).map_err(Error::from)
 	}
 
 	fn deserialize_any_helper<V: de::Visitor<'de>>(self, visitor: V, value: Value) -> Result<V::Value> {
@@ -99,7 +99,7 @@ impl<'de> RowValue<'de> {
 	}
 }
 
-impl<'de> de::Deserializer<'de> for RowValue<'de> {
+impl<'de, RI: rusqlite::RowIndex + Copy> de::Deserializer<'de> for RowValue<'de, RI> {
 	type Error = Error;
 
 	fn deserialize_bool<V: de::Visitor<'de>>(self, visitor: V) -> Result<V::Value> {
@@ -166,7 +166,7 @@ impl<'de> de::Deserializer<'de> for RowValue<'de> {
 }
 
 struct RowMapAccess<'de> {
-	idx: usize,
+	idx: i32,
 	de: RowDeserializer<'de>,
 }
 
@@ -174,10 +174,10 @@ impl<'de> de::MapAccess<'de> for RowMapAccess<'de> {
 	type Error = Error;
 
 	fn next_key_seed<K: de::DeserializeSeed<'de>>(&mut self, seed: K) -> Result<Option<K::Value>> {
-		if self.idx >= self.de.columns.len() {
+		if self.idx as usize >= self.de.columns.len() {
 			return Ok(None);
 		}
-		seed.deserialize(self.de.columns[self.idx].as_str().into_deserializer()).map(Some)
+		seed.deserialize(self.de.columns[self.idx as usize].as_str().into_deserializer()).map(Some)
 	}
 
 	fn next_value_seed<V: de::DeserializeSeed<'de>>(&mut self, seed: V) -> Result<V::Value> {
@@ -188,7 +188,7 @@ impl<'de> de::MapAccess<'de> for RowMapAccess<'de> {
 }
 
 struct RowSeqAccess<'de> {
-	idx: usize,
+	idx: i32,
 	de: RowDeserializer<'de>,
 }
 
