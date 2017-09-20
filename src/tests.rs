@@ -25,7 +25,7 @@ fn test_value_same<T: serde::Serialize + serde::de::DeserializeOwned + PartialEq
 	test_values(db_type, &src.clone(), src)
 }
 
-fn test_values<S: serde::Serialize, D: serde::de::DeserializeOwned + PartialEq + Debug, >(db_type: &str, value_ser: &S, value_de: &D) {
+fn test_values<S: serde::Serialize, D: serde::de::DeserializeOwned + PartialEq + Debug>(db_type: &str, value_ser: &S, value_de: &D) {
 	test_values_with_cmp_fn::<_, _, &Fn(&D, &D) -> bool>(db_type, value_ser, value_de, None)
 }
 
@@ -47,8 +47,7 @@ fn test_values_with_cmp_fn<S, D, F>(db_type: &str, value_ser: &S, value_de: &D, 
 	con.execute("INSERT INTO test(test_column) VALUES(?)", &super::to_params(value_ser).unwrap().to_slice()).unwrap();
 	// deserialization
 	let mut stmt = con.prepare("SELECT * FROM test").unwrap();
-	let columns = super::columns_from_statement(&stmt);
-	let res = stmt.query_map(&[], |row| super::from_row_with_columns::<D>(row, &columns)).unwrap();
+	let res = stmt.query_map(&[], super::from_row::<D>).unwrap();
 	for row in res {
 		let row = row.unwrap().unwrap();
 		match comparison_fn {
@@ -146,11 +145,18 @@ fn test_map() {
 		src.insert("field_1".into(), 1);
 		src.insert("field_3".into(), 3);
 		con.execute_named("INSERT INTO test VALUES(:field_1, :field_2, :field_3)", &super::to_params_named(&src).unwrap().to_slice()).unwrap();
-		// deserialization
+		// deserialization with columns
 		let mut stmt = con.prepare("SELECT * FROM test").unwrap();
-		let columns = super::columns_from_statement(&stmt);
-		let mut res = stmt.query_map_named(&[], |row| super::from_row_with_columns::<collections::HashMap<String, i64>>(row, &columns)).unwrap();
-		assert_eq!(res.next().unwrap().unwrap().unwrap(), src);
+		{
+			let columns = super::columns_from_statement(&stmt);
+			let mut res = stmt.query_map_named(&[], |row| super::from_row_with_columns::<collections::HashMap<String, i64>, _>(row, &columns)).unwrap();
+			assert_eq!(res.next().unwrap().unwrap().unwrap(), src);
+		}
+		// deserialization without columns => empty hashmap
+		{
+			let mut res = stmt.query_map_named(&[], super::from_row::<collections::HashMap<String, i64>>).unwrap();
+			assert_eq!(res.next().unwrap().unwrap().unwrap(), collections::HashMap::<String, i64>::new());
+		}
 	}
 
 	{
@@ -165,11 +171,21 @@ fn test_map() {
 		src.insert('b', 1);
 		src.insert('c', 3);
 		con.execute_named("INSERT INTO test VALUES(:a, :b, :c)", &super::to_params_named(&src).unwrap().to_slice()).unwrap();
-		// deserialization
 		let mut stmt = con.prepare("SELECT * FROM test").unwrap();
-		let columns = super::columns_from_statement(&stmt);
-		let mut res = stmt.query_map_named(&[], |row| super::from_row_with_columns::<collections::HashMap<char, i64>>(row, &columns)).unwrap();
-		assert_eq!(res.next().unwrap().unwrap().unwrap(), src);
+		// deserialization with columns
+		{
+			let columns = super::columns_from_statement(&stmt);
+			let mut res = stmt.query_map_named(&[], |row| super::from_row_with_columns::<collections::HashMap<char, i64>, _>(row, &columns)).unwrap();
+			assert_eq!(res.next().unwrap().unwrap().unwrap(), src);
+		}
+		// deserialization with custom columns
+		{
+			let columns = vec!["a", "b"];
+			let mut res = stmt.query_map_named(&[], |row| super::from_row_with_columns::<collections::HashMap<char, i64>, _>(row, columns.as_slice())).unwrap();
+			let mut src = src.clone();
+			src.remove(&'c');
+			assert_eq!(res.next().unwrap().unwrap().unwrap(), src);
+		}
 	}
 }
 
@@ -180,11 +196,18 @@ fn test_tuple() {
 	// serialization
 	let src: Test = (34, 76.4, "the test".into(), vec![10, 20, 30], Some(9));
 	con.execute("INSERT INTO test VALUES(?, ?, ?, ?, ?)", &super::to_params(&src).unwrap().to_slice()).unwrap();
-	// deserialization
 	let mut stmt = con.prepare("SELECT * FROM test").unwrap();
-	let columns = super::columns_from_statement(&stmt);
-	let mut res = stmt.query_map(&[], |row| super::from_row_with_columns::<Test>(row, &columns)).unwrap();
-	assert_eq!(res.next().unwrap().unwrap().unwrap(), src);
+	// deserialization with columns
+	{
+		let columns = super::columns_from_statement(&stmt);
+		let mut res = stmt.query_map(&[], |row| super::from_row_with_columns::<Test, _>(row, &columns)).unwrap();
+		assert_eq!(res.next().unwrap().unwrap().unwrap(), src);
+	}
+	// deserialization without columns
+	{
+		let mut res = stmt.query_map(&[], super::from_row::<Test>).unwrap();
+		assert_eq!(res.next().unwrap().unwrap().unwrap(), src);
+	}
 }
 
 #[test]
@@ -225,7 +248,7 @@ fn test_struct() {
 		let mut stmt = con.prepare("SELECT * FROM test").unwrap();
 		{
 			let columns = super::columns_from_statement(&stmt);
-			let mut res = stmt.query_map(&[], |row| super::from_row_with_columns::<Test>(row, &columns)).unwrap();
+			let mut res = stmt.query_map(&[], |row| super::from_row_with_columns::<Test, _>(row, &columns)).unwrap();
 			assert_eq!(res.next().unwrap().unwrap().unwrap(), src);
 		}
 		// deserialization without columns
@@ -256,10 +279,10 @@ fn test_struct() {
 			let columns = super::columns_from_statement(&stmt);
 			let mut rows = stmt.query(&[]).unwrap();
 			{
-				let mut res = super::from_rows_ref_with_columns::<Test>(&mut rows, &columns);
+				let mut res = super::from_rows_ref_with_columns::<Test, _>(&mut rows, &columns);
 				assert_eq!(res.next().unwrap(), src);
 			}
-			assert_eq!(super::from_row_with_columns::<Test>(&rows.next().unwrap().unwrap(), &columns).unwrap(), src);
+			assert_eq!(super::from_row_with_columns::<Test, _>(&rows.next().unwrap().unwrap(), &columns).unwrap(), src);
 		}
 		// deserialization without columns
 		{
@@ -290,7 +313,7 @@ fn test_struct() {
 		let mut stmt = con.prepare("SELECT * FROM test").unwrap();
 		{
 			let columns = super::columns_from_statement(&stmt);
-			let mut res = super::from_rows_with_columns::<Test>(stmt.query(&[]).unwrap(), &columns);
+			let mut res = super::from_rows_with_columns::<Test, _>(stmt.query(&[]).unwrap(), &columns);
 			assert_eq!(res.next().unwrap(), src);
 		}
 		// deserialization without columns
