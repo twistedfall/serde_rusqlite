@@ -228,6 +228,11 @@ fn test_struct() {
 			let mut res = stmt.query_map(&[], |row| super::from_row_with_columns::<Test>(row, &columns)).unwrap();
 			assert_eq!(res.next().unwrap().unwrap().unwrap(), src);
 		}
+		// deserialization without columns
+		{
+			let mut res = stmt.query_map(&[], super::from_row::<Test>).unwrap();
+			assert_eq!(res.next().unwrap().unwrap().unwrap(), src);
+		}
 	}
 
 	{
@@ -244,12 +249,27 @@ fn test_struct() {
 		// serialization
 		let src = Test { f_blob: vec![5, 10, 15], f_integer: 10, f_real: -65.3, f_text: "".into(), f_null: Some(43) };
 		con.execute_named("INSERT INTO test VALUES(:f_integer, :f_real, :f_text, :f_blob, :f_null)", &super::to_params_named(&src).unwrap().to_slice()).unwrap();
-		// deserialization
+		con.execute_named("INSERT INTO test VALUES(:f_integer, :f_real, :f_text, :f_blob, :f_null)", &super::to_params_named(&src).unwrap().to_slice()).unwrap();
+		// deserialization with columns
 		let mut stmt = con.prepare("SELECT * FROM test").unwrap();
-		let columns = super::columns_from_statement(&stmt);
-		let mut rows = stmt.query(&[]).unwrap();
-		let mut res = super::from_rows_with_columns_ref::<Test>(&mut rows, &columns);
-		assert_eq!(res.next().unwrap(), src);
+		{
+			let columns = super::columns_from_statement(&stmt);
+			let mut rows = stmt.query(&[]).unwrap();
+			{
+				let mut res = super::from_rows_ref_with_columns::<Test>(&mut rows, &columns);
+				assert_eq!(res.next().unwrap(), src);
+			}
+			assert_eq!(super::from_row_with_columns::<Test>(&rows.next().unwrap().unwrap(), &columns).unwrap(), src);
+		}
+		// deserialization without columns
+		{
+			let mut rows = stmt.query(&[]).unwrap();
+			{
+				let mut res = super::from_rows_ref::<Test>(&mut rows);
+				assert_eq!(res.next().unwrap(), src);
+			}
+			assert_eq!(super::from_row::<Test>(&rows.next().unwrap().unwrap()).unwrap(), src);
+		}
 	}
 
 	{
@@ -266,10 +286,17 @@ fn test_struct() {
 		// serialization
 		let src = Test { f_blob: vec![5, 10, 15], f_integer: 10, f_real: -65.3, f_text: "".into(), f_null: Some(43) };
 		con.execute_named("INSERT INTO test VALUES(:f_integer, :f_real, :f_text, :f_blob, :f_null)", &super::to_params_named(&src).unwrap().to_slice()).unwrap();
-		// deserialization
+		// deserialization with columns
 		let mut stmt = con.prepare("SELECT * FROM test").unwrap();
-		let columns = super::columns_from_statement(&stmt);
-		let mut res = super::from_rows_with_columns::<Test>(stmt.query(&[]).unwrap(), &columns);
-		assert_eq!(res.next().unwrap(), src);
+		{
+			let columns = super::columns_from_statement(&stmt);
+			let mut res = super::from_rows_with_columns::<Test>(stmt.query(&[]).unwrap(), &columns);
+			assert_eq!(res.next().unwrap(), src);
+		}
+		// deserialization without columns
+		{
+			let mut res = super::from_rows::<Test>(stmt.query(&[]).unwrap());
+			assert_eq!(res.next().unwrap(), src);
+		}
 	}
 }

@@ -30,6 +30,10 @@ impl<'de> RowDeserializer<'de> {
 		Self { row, columns: Some(columns) }
 	}
 
+	pub fn from_row(row: &'de rusqlite::Row) -> Self {
+		Self { row, columns: None }
+	}
+
 	fn row_value(&self) -> RowValue<'de, i32> {
 		RowValue { row: self.row, idx: 0 }
 	}
@@ -42,7 +46,8 @@ impl<'de> de::Deserializer<'de> for RowDeserializer<'de> {
 		visitor.visit_map(RowMapAccess { idx: 0, de: self })
 	}
 
-	fn deserialize_struct<V: de::Visitor<'de>>(self, _name: &'static str, _fields: &'static [&'static str], visitor: V) -> Result<V::Value> {
+	fn deserialize_struct<V: de::Visitor<'de>>(mut self, _name: &'static str, fields: &'static [&'static str], visitor: V) -> Result<V::Value> {
+		self.columns = Some(fields);
 		self.deserialize_map(visitor)
 	}
 
@@ -187,9 +192,13 @@ impl<'de> de::MapAccess<'de> for RowMapAccess<'de> {
 	}
 
 	fn next_value_seed<V: de::DeserializeSeed<'de>>(&mut self, seed: V) -> Result<V::Value> {
-		let out = seed.deserialize(RowValue { idx: self.idx, row: self.de.row });
-		self.idx += 1;
-		out
+		if let Some(columns) = self.de.columns {
+			let out = seed.deserialize(RowValue { idx: columns[self.idx as usize], row: self.de.row });
+			self.idx += 1;
+			out
+		} else {
+			unreachable!()
+		}
 	}
 }
 
