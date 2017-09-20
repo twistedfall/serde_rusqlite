@@ -2,9 +2,13 @@ extern crate rusqlite;
 extern crate serde;
 
 use self::serde::{de, ser};
-use std::fmt;
+use std::{fmt, result};
 
 error_chain! {
+	types {
+		Error, ErrorKind, ResultExt;
+	}
+
 	foreign_links {
 		RuSQLiteError(rusqlite::Error) #[doc = "`rusqlite` error"];
 	}
@@ -17,6 +21,7 @@ error_chain! {
 	}
 }
 
+pub type Result<T> = result::Result<T, Error>;
 
 impl Error {
 	fn unsupported(err: &str) -> Error {
