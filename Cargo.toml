@@ -1,12 +1,13 @@
 [package]
 name = "serde_rusqlite"
-version = "0.11.2"
+version = "0.12.0"
 description = "Serialize/deserialize rusqlite rows"
 keywords = ["serde", "sqlite", "rusqlite", "serialization", "deserialization"]
 categories = ["database", "encoding", ]
 authors = ["Pro <twisted.fall@gmail.com>"]
 license = "LGPL-3.0"
 documentation = "https://docs.rs/serde_rusqlite"
+readme = "README.md"
 repository = "https://github.com/twistedfall/serde_rusqlite"
 
 [dependencies]
