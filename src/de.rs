@@ -22,12 +22,12 @@ macro_rules! forward_to_row_value_deserializer {
 /// You shouldn't use it directly, but via the crate's `from_row()` function. Check the crate documentation for example.
 pub struct RowDeserializer<'de> {
 	row: &'de rusqlite::Row<'de, 'de>,
-	columns: &'de [String],
+	columns: Option<&'de [&'de str]>,
 }
 
 impl<'de> RowDeserializer<'de> {
-	pub fn from_row(row: &'de rusqlite::Row, columns: &'de [String]) -> Self {
-		Self { row, columns }
+	pub fn from_row(row: &'de rusqlite::Row, columns: &'de [&'de str]) -> Self {
+		Self { row, columns: Some(columns) }
 	}
 
 	fn row_value(&self) -> RowValue<'de, i32> {
@@ -174,10 +174,16 @@ impl<'de> de::MapAccess<'de> for RowMapAccess<'de> {
 	type Error = Error;
 
 	fn next_key_seed<K: de::DeserializeSeed<'de>>(&mut self, seed: K) -> Result<Option<K::Value>> {
-		if self.idx as usize >= self.de.columns.len() {
-			return Ok(None);
+		match self.de.columns {
+			Some(columns) => {
+				if self.idx as usize >= columns.len() {
+					Ok(None)
+				} else {
+					seed.deserialize(columns[self.idx as usize].into_deserializer()).map(Some)
+				}
+			},
+			None => Ok(None)
 		}
-		seed.deserialize(self.de.columns[self.idx as usize].as_str().into_deserializer()).map(Some)
 	}
 
 	fn next_value_seed<V: de::DeserializeSeed<'de>>(&mut self, seed: V) -> Result<V::Value> {

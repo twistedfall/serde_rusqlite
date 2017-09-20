@@ -167,7 +167,8 @@ pub fn columns_from_statement(stmt: &rusqlite::Statement) -> Vec<String> {
 ///
 /// You should use this function in the closure you supply to `query_map()`
 pub fn from_row<'row, D: serde::de::DeserializeOwned>(row: &'row rusqlite::Row, columns: &'row [String]) -> Result<D> {
-	D::deserialize(RowDeserializer::from_row(row, columns))
+	let columns_ref = columns.iter().map(|x| x.as_str()).collect::<Vec<_>>();
+	D::deserialize(RowDeserializer::from_row(row, &columns_ref))
 }
 
 /// Returns iterator that owns `rusqlite::Rows` and deserializes all records from it into instances of `D: serde::Deserialize`
