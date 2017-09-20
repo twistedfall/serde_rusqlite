@@ -26,7 +26,7 @@ pub struct RowDeserializer<'de> {
 }
 
 impl<'de> RowDeserializer<'de> {
-	pub fn from_row(row: &'de rusqlite::Row, columns: &'de [&'de str]) -> Self {
+	pub fn from_row_with_columns(row: &'de rusqlite::Row, columns: &'de [&'de str]) -> Self {
 		Self { row, columns: Some(columns) }
 	}
 
