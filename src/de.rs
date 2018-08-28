@@ -34,7 +34,7 @@ impl<'de> RowDeserializer<'de> {
 		Self { row, columns: None }
 	}
 
-	fn row_value(&self) -> RowValue<'de, i32> {
+	fn row_value(&self) -> RowValue<'de, usize> {
 		RowValue { row: self.row, idx: 0 }
 	}
 }
@@ -171,7 +171,7 @@ impl<'de, RI: rusqlite::RowIndex + Copy> de::Deserializer<'de> for RowValue<'de,
 }
 
 struct RowMapAccess<'de> {
-	idx: i32,
+	idx: usize,
 	de: RowDeserializer<'de>,
 }
 
@@ -203,7 +203,7 @@ impl<'de> de::MapAccess<'de> for RowMapAccess<'de> {
 }
 
 struct RowSeqAccess<'de> {
-	idx: i32,
+	idx: usize,
 	de: RowDeserializer<'de>,
 }
 
