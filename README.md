@@ -9,7 +9,7 @@ See [full documentation](https://docs.rs/serde_rusqlite)
 Add this to your Cargo.toml:
 ```
 [dependencies]
-serde_rusqlite = "0.13"
+serde_rusqlite = "0.14"
 ```
 
 ## Serde Rusqlite
