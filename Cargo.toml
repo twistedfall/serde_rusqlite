@@ -1,6 +1,6 @@
 [package]
 name = "serde_rusqlite"
-version = "0.14.0"
+version = "0.15.0"
 description = "Serialize/deserialize rusqlite rows"
 keywords = ["serde", "sqlite", "rusqlite", "serialization", "deserialization"]
 categories = ["database", "encoding", ]
@@ -12,7 +12,7 @@ repository = "https://github.com/twistedfall/serde_rusqlite"
 
 [dependencies]
 error-chain = "0.12"
-rusqlite = "0.14"
+rusqlite = "0.15"
 serde = "1.0"
 
 [dev-dependencies]

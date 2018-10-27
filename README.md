@@ -66,6 +66,7 @@ extern crate serde_derive;
 extern crate serde_rusqlite;
 
 use serde_rusqlite::*;
+use rusqlite::types::ToSql;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 struct Example {
@@ -75,7 +76,7 @@ struct Example {
 
 fn main() {
    let connection = rusqlite::Connection::open_in_memory().unwrap();
-   connection.execute("CREATE TABLE example (id INT, name TEXT)", &[]).unwrap();
+   connection.execute("CREATE TABLE example (id INT, name TEXT)", &[] as &[&ToSql]).unwrap();
 
    // using structure to generate named bound query arguments
    let row1 = Example{ id: 1, name: "first name".into() };
@@ -87,19 +88,19 @@ fn main() {
 
    // deserializing using query() and from_rows()
    let mut statement = connection.prepare("SELECT * FROM example").unwrap();
-   let mut res = from_rows::<Example>(statement.query(&[]).unwrap());
+   let mut res = from_rows::<Example>(statement.query(&[] as &[&ToSql]).unwrap());
    assert_eq!(res.next().unwrap(), row1);
    assert_eq!(res.next().unwrap(), Example{ id: 2, name: "second name".into() });
 
    // deserializing using query_map() and from_row()
    let mut statement = connection.prepare("SELECT * FROM example").unwrap();
-   let mut rows = statement.query_map(&[], from_row::<Example>).unwrap();
+   let mut rows = statement.query_map(&[] as &[&ToSql], from_row::<Example>).unwrap();
    assert_eq!(rows.next().unwrap().unwrap().unwrap(), row1);
    assert_eq!(rows.next().unwrap().unwrap().unwrap(), Example{ id: 2, name: "second name".into() });
 
    // deserializing using query() and from_rows_ref()
    let mut statement = connection.prepare("SELECT * FROM example").unwrap();
-   let mut rows = statement.query(&[]).unwrap();
+   let mut rows = statement.query(&[] as &[&ToSql]).unwrap();
    {
       // only first record is deserialized here
       let mut res = from_rows_ref::<Example>(&mut rows);
@@ -111,21 +112,21 @@ fn main() {
    // deserializing using query() and from_rows_with_columns()
    let mut statement = connection.prepare("SELECT * FROM example").unwrap();
    let columns = columns_from_statement(&statement);
-   let mut res = from_rows_with_columns::<Example, _>(statement.query(&[]).unwrap(), &columns);
+   let mut res = from_rows_with_columns::<Example, _>(statement.query(&[] as &[&ToSql]).unwrap(), &columns);
    assert_eq!(res.next().unwrap(), row1);
    assert_eq!(res.next().unwrap(), Example{ id: 2, name: "second name".into() });
 
    // deserializing using query_map() and from_row_with_columns()
    let mut statement = connection.prepare("SELECT * FROM example").unwrap();
    let columns = columns_from_statement(&statement);
-   let mut rows = statement.query_map(&[], |row| from_row_with_columns::<Example, _>(row, &columns).unwrap()).unwrap();
+   let mut rows = statement.query_map(&[] as &[&ToSql], |row| from_row_with_columns::<Example, _>(row, &columns).unwrap()).unwrap();
    assert_eq!(rows.next().unwrap().unwrap(), row1);
    assert_eq!(rows.next().unwrap().unwrap(), Example{ id: 2, name: "second name".into() });
 
    // deserializing using query() and from_rows_ref_with_columns()
    let mut statement = connection.prepare("SELECT * FROM example").unwrap();
    let columns = columns_from_statement(&statement);
-   let mut rows = statement.query(&[]).unwrap();
+   let mut rows = statement.query(&[] as &[&ToSql]).unwrap();
    {
       // only first record is deserialized here
       let mut res = from_rows_ref_with_columns::<Example, _>(&mut rows, &columns);
