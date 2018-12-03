@@ -4,7 +4,7 @@ extern crate serde_bytes;
 
 use std::{collections, f32, f64};
 use std::fmt::Debug;
-use self::rusqlite::types::ToSql;
+use self::rusqlite::NO_PARAMS;
 
 fn make_connection() -> rusqlite::Connection {
 	make_connection_with_spec("
@@ -18,7 +18,7 @@ fn make_connection() -> rusqlite::Connection {
 
 fn make_connection_with_spec(table_spec: &str) -> rusqlite::Connection {
 	let con = rusqlite::Connection::open_in_memory().unwrap();
-	con.execute(&format!("CREATE TABLE test({})", table_spec), &[] as &[&ToSql]).unwrap();
+	con.execute(&format!("CREATE TABLE test({})", table_spec), NO_PARAMS).unwrap();
 	con
 }
 
@@ -48,7 +48,7 @@ fn test_values_with_cmp_fn<S, D, F>(db_type: &str, value_ser: &S, value_de: &D, 
 	con.execute("INSERT INTO test(test_column) VALUES(?)", &super::to_params(value_ser).unwrap().to_slice()).unwrap();
 	// deserialization
 	let mut stmt = con.prepare("SELECT * FROM test").unwrap();
-	let res = stmt.query_map(&[] as &[&ToSql], super::from_row::<D>).unwrap();
+	let res = stmt.query_map(NO_PARAMS, super::from_row::<D>).unwrap();
 	for row in res {
 		let row = row.unwrap().unwrap();
 		match comparison_fn {
@@ -201,12 +201,12 @@ fn test_tuple() {
 	// deserialization with columns
 	{
 		let columns = super::columns_from_statement(&stmt);
-		let mut res = stmt.query_map(&[] as &[&ToSql], |row| super::from_row_with_columns::<Test, _>(row, &columns)).unwrap();
+		let mut res = stmt.query_map(NO_PARAMS, |row| super::from_row_with_columns::<Test, _>(row, &columns)).unwrap();
 		assert_eq!(res.next().unwrap().unwrap().unwrap(), src);
 	}
 	// deserialization without columns
 	{
-		let mut res = stmt.query_map(&[] as &[&ToSql], super::from_row::<Test>).unwrap();
+		let mut res = stmt.query_map(NO_PARAMS, super::from_row::<Test>).unwrap();
 		assert_eq!(res.next().unwrap().unwrap().unwrap(), src);
 	}
 }
@@ -249,12 +249,12 @@ fn test_struct() {
 		let mut stmt = con.prepare("SELECT * FROM test").unwrap();
 		{
 			let columns = super::columns_from_statement(&stmt);
-			let mut res = stmt.query_map(&[] as &[&ToSql], |row| super::from_row_with_columns::<Test, _>(row, &columns)).unwrap();
+			let mut res = stmt.query_map(NO_PARAMS, |row| super::from_row_with_columns::<Test, _>(row, &columns)).unwrap();
 			assert_eq!(res.next().unwrap().unwrap().unwrap(), src);
 		}
 		// deserialization without columns
 		{
-			let mut res = stmt.query_map(&[] as &[&ToSql], super::from_row::<Test>).unwrap();
+			let mut res = stmt.query_map(NO_PARAMS, super::from_row::<Test>).unwrap();
 			assert_eq!(res.next().unwrap().unwrap().unwrap(), src);
 		}
 	}
@@ -278,7 +278,7 @@ fn test_struct() {
 		let mut stmt = con.prepare("SELECT * FROM test").unwrap();
 		{
 			let columns = super::columns_from_statement(&stmt);
-			let mut rows = stmt.query(&[] as &[&ToSql]).unwrap();
+			let mut rows = stmt.query(NO_PARAMS).unwrap();
 			{
 				let mut res = super::from_rows_ref_with_columns::<Test, _>(&mut rows, &columns);
 				assert_eq!(res.next().unwrap(), src);
@@ -287,7 +287,7 @@ fn test_struct() {
 		}
 		// deserialization without columns
 		{
-			let mut rows = stmt.query(&[] as &[&ToSql]).unwrap();
+			let mut rows = stmt.query(NO_PARAMS).unwrap();
 			{
 				let mut res = super::from_rows_ref::<Test>(&mut rows);
 				assert_eq!(res.next().unwrap(), src);
@@ -314,12 +314,12 @@ fn test_struct() {
 		let mut stmt = con.prepare("SELECT * FROM test").unwrap();
 		{
 			let columns = super::columns_from_statement(&stmt);
-			let mut res = super::from_rows_with_columns::<Test, _>(stmt.query(&[] as &[&ToSql]).unwrap(), &columns);
+			let mut res = super::from_rows_with_columns::<Test, _>(stmt.query(NO_PARAMS).unwrap(), &columns);
 			assert_eq!(res.next().unwrap(), src);
 		}
 		// deserialization without columns
 		{
-			let mut res = super::from_rows::<Test>(stmt.query(&[] as &[&ToSql]).unwrap());
+			let mut res = super::from_rows::<Test>(stmt.query(NO_PARAMS).unwrap());
 			assert_eq!(res.next().unwrap(), src);
 		}
 	}

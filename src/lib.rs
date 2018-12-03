@@ -62,7 +62,7 @@
 //!
 //! fn main() {
 //!    let connection = rusqlite::Connection::open_in_memory().unwrap();
-//!    connection.execute_batch("CREATE TABLE example (id INT, name TEXT)").unwrap();
+//!    connection.execute("CREATE TABLE example (id INT, name TEXT)", NO_PARAMS).unwrap();
 //!
 //!    // using structure to generate named bound query arguments
 //!    let row1 = Example{ id: 1, name: "first name".into() };
