@@ -124,8 +124,6 @@
 //! }
 //! ```
 
-#[macro_use]
-extern crate error_chain;
 #[cfg(test)]
 #[macro_use]
 extern crate matches;
@@ -143,7 +141,7 @@ pub mod ser;
 mod tests;
 
 pub use de::RowDeserializer;
-pub use error::{Error, ErrorKind, Result};
+pub use error::{Error, Result};
 pub use ser::{NamedParamSlice, NamedSliceSerializer, PositionalParamSlice, PositionalSliceSerializer};
 use std::marker;
 

@@ -12,7 +12,7 @@ mod positional;
 mod slice;
 mod tosql;
 
-pub use super::{Error, ErrorKind, Result};
+pub use super::{Error, Result};
 pub use self::named::NamedSliceSerializer;
 pub use self::positional::PositionalSliceSerializer;
 pub use self::slice::{PositionalParamSlice, NamedParamSlice};

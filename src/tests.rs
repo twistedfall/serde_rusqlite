@@ -26,7 +26,7 @@ fn test_value_same<T: serde::Serialize + serde::de::DeserializeOwned + PartialEq
 	test_values(db_type, &src.clone(), src)
 }
 
-fn test_values<S: serde::Serialize, D: serde::de::DeserializeOwned + PartialEq + Debug>(db_type: &str, value_ser: &S, value_de: &D) {
+fn test_values<D: serde::de::DeserializeOwned + PartialEq + Debug>(db_type: &str, value_ser: &impl serde::Serialize, value_de: &D) {
 	test_values_with_cmp_fn::<_, _, &Fn(&D, &D) -> bool>(db_type, value_ser, value_de, None)
 }
 
@@ -78,7 +78,7 @@ fn test_uint() {
 	test_value_same("INT CHECK(typeof(test_column) == 'integer')", &7162u16);
 	test_value_same("INT CHECK(typeof(test_column) == 'integer')", &98172983_u32);
 	test_value_same("INT CHECK(typeof(test_column) == 'integer')", &98169812698712987_u64);
-	test_ser_err(&u64::max_value(), |err| matches!(*err, super::Error(super::ErrorKind::ValueTooLarge(_), _)));
+	test_ser_err(&u64::max_value(), |err| matches!(*err, super::Error::ValueTooLarge(..)));
 }
 
 #[test]

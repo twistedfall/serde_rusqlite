@@ -237,7 +237,7 @@ impl<'de> de::VariantAccess<'de> for VariantAccess {
 		Ok(())
 	}
 
-	fn newtype_variant_seed<T: de::DeserializeSeed<'de>>(self, _seed: T) -> Result<T::Value> { Err(Error::de_unsupported("newtype_variant").into()) }
+	fn newtype_variant_seed<T: de::DeserializeSeed<'de>>(self, _seed: T) -> Result<T::Value> { Err(Error::de_unsupported("newtype_variant")) }
 	fn tuple_variant<V: de::Visitor<'de>>(self, _len: usize, _visitor: V) -> Result<V::Value> { Err(Error::de_unsupported("tuple_variant")) }
 	fn struct_variant<V: de::Visitor<'de>>(self, _fields: &'static [&'static str], _visitor: V) -> Result<V::Value> { Err(Error::de_unsupported("struct_variant")) }
 }

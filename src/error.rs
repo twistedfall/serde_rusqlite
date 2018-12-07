@@ -1,52 +1,69 @@
 extern crate rusqlite;
 extern crate serde;
 
+use std::{error, fmt, result};
+
 use self::serde::{de, ser};
-use std::{fmt, result};
 
-error_chain! {
-	types {
-		Error, ErrorKind, ResultExt;
-	}
-
-	foreign_links {
-		RuSQLiteError(rusqlite::Error) #[doc = "`rusqlite` error"];
-	}
-
-	errors {
-		#[doc = "this type of serialization or deserialization is not supported"]
-		Unsupported(err: String) {}
-		#[doc = "the value is too large, e.g. trying to serialize `u64` that is too large to fit in `i64`"]
-		ValueTooLarge(err: String) {}
-	}
+#[derive(Debug)]
+pub enum Error {
+	/// This type of serialization or deserialization is not supported
+	Unsupported(String),
+	/// The value is too large, e.g. trying to serialize `u64` that is too large to fit in `i64`
+	ValueTooLarge(String),
+	/// General error during serialization
+	Serialization(String),
+	/// General error during deserialization
+	Deserialization(String),
+	/// Error originating from rusqlite
+	Rusqlite(rusqlite::Error),
 }
 
 pub type Result<T> = result::Result<T, Error>;
 
 impl Error {
-	fn unsupported(err: &str) -> Error {
-		ErrorKind::Unsupported(err.into()).into()
+	fn unsupported(err: impl Into<String>) -> Self {
+		Error::Unsupported(err.into()).into()
 	}
 
 	/// Create the instance of `Unsupported` during serialization `Error`
-	pub fn ser_unsupported(typ: &str) -> Error {
-		Error::unsupported(&format!("Serialization is not supported from type: {}", typ))
+	pub fn ser_unsupported(typ: &str) -> Self {
+		Error::unsupported(format!("Serialization is not supported from type: {}", typ))
 	}
 
 	/// Create the instance of `Unsupported` during deserialization `Error`
-	pub fn de_unsupported(typ: &str) -> Error {
-		Error::unsupported(&format!("Deserialization is not supported into type: {}", typ))
+	pub fn de_unsupported(typ: &str) -> Self {
+		Error::unsupported(format!("Deserialization is not supported into type: {}", typ))
 	}
 }
 
+impl fmt::Display for Error {
+	fn fmt(&self, f: &mut fmt::Formatter) -> result::Result<(), fmt::Error> {
+		match self {
+			Error::Unsupported(s) | Error::ValueTooLarge(s) => write!(f, "{}", s),
+			Error::Serialization(s) => write!(f, "Serialization error: {}", s),
+			Error::Deserialization(s) => write!(f, "Deserialization error: {}", s),
+			Error::Rusqlite(s) => write!(f, "Rusqlite error: {}", s),
+		}
+	}
+}
+
+impl error::Error for Error {}
+
 impl de::Error for Error {
 	fn custom<T: fmt::Display>(msg: T) -> Self {
-		msg.to_string().into()
+		Error::Deserialization(msg.to_string())
 	}
 }
 
 impl ser::Error for Error {
 	fn custom<T: fmt::Display>(msg: T) -> Self {
-		msg.to_string().into()
+		Error::Serialization(msg.to_string())
+	}
+}
+
+impl From<rusqlite::Error> for Error {
+	fn from(e: rusqlite::Error) -> Self {
+		Error::Rusqlite(e)
 	}
 }
