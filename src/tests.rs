@@ -48,9 +48,9 @@ fn test_values_with_cmp_fn<S, D, F>(db_type: &str, value_ser: &S, value_de: &D, 
 	con.execute("INSERT INTO test(test_column) VALUES(?)", &super::to_params(value_ser).unwrap().to_slice()).unwrap();
 	// deserialization
 	let mut stmt = con.prepare("SELECT * FROM test").unwrap();
-	let res = stmt.query_map(NO_PARAMS, super::from_row::<D>).unwrap();
+	let res = stmt.query_and_then(NO_PARAMS, super::from_row::<D>).unwrap();
 	for row in res {
-		let row = row.unwrap().unwrap();
+		let row = row.unwrap();
 		match comparison_fn {
 			None => assert_eq!(row, *value_de),
 			Some(ref comparison_fn) => assert!(comparison_fn(&row, value_de), "value after deserialization is not the same as before")
@@ -150,13 +150,13 @@ fn test_map() {
 		let mut stmt = con.prepare("SELECT * FROM test").unwrap();
 		{
 			let columns = super::columns_from_statement(&stmt);
-			let mut res = stmt.query_map_named(&[], |row| super::from_row_with_columns::<collections::HashMap<String, i64>, _>(row, &columns)).unwrap();
-			assert_eq!(res.next().unwrap().unwrap().unwrap(), src);
+			let mut res = stmt.query_and_then_named(&[], |row| super::from_row_with_columns::<collections::HashMap<String, i64>, _>(row, &columns)).unwrap();
+			assert_eq!(res.next().unwrap().unwrap(), src);
 		}
 		// deserialization without columns => empty hashmap
 		{
-			let mut res = stmt.query_map_named(&[], super::from_row::<collections::HashMap<String, i64>>).unwrap();
-			assert_eq!(res.next().unwrap().unwrap().unwrap(), collections::HashMap::<String, i64>::new());
+			let mut res = stmt.query_and_then_named(&[], super::from_row::<collections::HashMap<String, i64>>).unwrap();
+			assert_eq!(res.next().unwrap().unwrap(), collections::HashMap::<String, i64>::new());
 		}
 	}
 
@@ -176,16 +176,16 @@ fn test_map() {
 		// deserialization with columns
 		{
 			let columns = super::columns_from_statement(&stmt);
-			let mut res = stmt.query_map_named(&[], |row| super::from_row_with_columns::<collections::HashMap<char, i64>, _>(row, &columns)).unwrap();
-			assert_eq!(res.next().unwrap().unwrap().unwrap(), src);
+			let mut res = stmt.query_and_then_named(&[], |row| super::from_row_with_columns::<collections::HashMap<char, i64>, _>(row, &columns)).unwrap();
+			assert_eq!(res.next().unwrap().unwrap(), src);
 		}
 		// deserialization with custom columns
 		{
 			let columns = vec!["a", "b"];
-			let mut res = stmt.query_map_named(&[], |row| super::from_row_with_columns::<collections::HashMap<char, i64>, _>(row, columns.as_slice())).unwrap();
+			let mut res = stmt.query_and_then_named(&[], |row| super::from_row_with_columns::<collections::HashMap<char, i64>, _>(row, columns.as_slice())).unwrap();
 			let mut src = src.clone();
 			src.remove(&'c');
-			assert_eq!(res.next().unwrap().unwrap().unwrap(), src);
+			assert_eq!(res.next().unwrap().unwrap(), src);
 		}
 	}
 }
@@ -201,13 +201,13 @@ fn test_tuple() {
 	// deserialization with columns
 	{
 		let columns = super::columns_from_statement(&stmt);
-		let mut res = stmt.query_map(NO_PARAMS, |row| super::from_row_with_columns::<Test, _>(row, &columns)).unwrap();
-		assert_eq!(res.next().unwrap().unwrap().unwrap(), src);
+		let mut res = stmt.query_and_then(NO_PARAMS, |row| super::from_row_with_columns::<Test, _>(row, &columns)).unwrap();
+		assert_eq!(res.next().unwrap().unwrap(), src);
 	}
 	// deserialization without columns
 	{
-		let mut res = stmt.query_map(NO_PARAMS, super::from_row::<Test>).unwrap();
-		assert_eq!(res.next().unwrap().unwrap().unwrap(), src);
+		let mut res = stmt.query_and_then(NO_PARAMS, super::from_row::<Test>).unwrap();
+		assert_eq!(res.next().unwrap().unwrap(), src);
 	}
 }
 
@@ -249,13 +249,13 @@ fn test_struct() {
 		let mut stmt = con.prepare("SELECT * FROM test").unwrap();
 		{
 			let columns = super::columns_from_statement(&stmt);
-			let mut res = stmt.query_map(NO_PARAMS, |row| super::from_row_with_columns::<Test, _>(row, &columns)).unwrap();
-			assert_eq!(res.next().unwrap().unwrap().unwrap(), src);
+			let mut res = stmt.query_and_then(NO_PARAMS, |row| super::from_row_with_columns::<Test, _>(row, &columns)).unwrap();
+			assert_eq!(res.next().unwrap().unwrap(), src);
 		}
 		// deserialization without columns
 		{
-			let mut res = stmt.query_map(NO_PARAMS, super::from_row::<Test>).unwrap();
-			assert_eq!(res.next().unwrap().unwrap().unwrap(), src);
+			let mut res = stmt.query_and_then(NO_PARAMS, super::from_row::<Test>).unwrap();
+			assert_eq!(res.next().unwrap().unwrap(), src);
 		}
 	}
 

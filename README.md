@@ -9,7 +9,7 @@ See [full documentation](https://docs.rs/serde_rusqlite)
 Add this to your Cargo.toml:
 ```
 [dependencies]
-serde_rusqlite = "0.17"
+serde_rusqlite = "0.18"
 ```
 
 ## Serde Rusqlite
@@ -92,11 +92,11 @@ fn main() {
    assert_eq!(res.next().unwrap(), row1);
    assert_eq!(res.next().unwrap(), Example{ id: 2, name: "second name".into() });
 
-   // deserializing using query_map() and from_row()
+   // deserializing using query_and_then() and from_row()
    let mut statement = connection.prepare("SELECT * FROM example").unwrap();
-   let mut rows = statement.query_map(NO_PARAMS, from_row::<Example>).unwrap();
-   assert_eq!(rows.next().unwrap().unwrap().unwrap(), row1);
-   assert_eq!(rows.next().unwrap().unwrap().unwrap(), Example{ id: 2, name: "second name".into() });
+   let mut rows = statement.query_and_then(NO_PARAMS, from_row::<Example>).unwrap();
+   assert_eq!(rows.next().unwrap().unwrap(), row1);
+   assert_eq!(rows.next().unwrap().unwrap(), Example{ id: 2, name: "second name".into() });
 
    // deserializing using query() and from_rows_ref()
    let mut statement = connection.prepare("SELECT * FROM example").unwrap();
@@ -116,10 +116,10 @@ fn main() {
    assert_eq!(res.next().unwrap(), row1);
    assert_eq!(res.next().unwrap(), Example{ id: 2, name: "second name".into() });
 
-   // deserializing using query_map() and from_row_with_columns()
+   // deserializing using query_and_then() and from_row_with_columns()
    let mut statement = connection.prepare("SELECT * FROM example").unwrap();
    let columns = columns_from_statement(&statement);
-   let mut rows = statement.query_map(NO_PARAMS, |row| from_row_with_columns::<Example, _>(row, &columns).unwrap()).unwrap();
+   let mut rows = statement.query_and_then(NO_PARAMS, |row| from_row_with_columns::<Example, _>(row, &columns)).unwrap();
    assert_eq!(rows.next().unwrap().unwrap(), row1);
    assert_eq!(rows.next().unwrap().unwrap(), Example{ id: 2, name: "second name".into() });
 

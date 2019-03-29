@@ -21,7 +21,7 @@ macro_rules! forward_to_row_value_deserializer {
 ///
 /// You shouldn't use it directly, but via the crate's `from_row()` function. Check the crate documentation for example.
 pub struct RowDeserializer<'de> {
-	row: &'de rusqlite::Row<'de, 'de>,
+	row: &'de rusqlite::Row<'de>,
 	columns: Option<&'de [&'de str]>,
 }
 
@@ -85,12 +85,12 @@ impl<'de> de::Deserializer<'de> for RowDeserializer<'de> {
 
 struct RowValue<'row, RI> {
 	idx: RI,
-	row: &'row rusqlite::Row<'row, 'row>,
+	row: &'row rusqlite::Row<'row>,
 }
 
 impl<'de, RI: rusqlite::RowIndex + Copy> RowValue<'de, RI> {
 	fn value<T: rusqlite::types::FromSql>(&self) -> Result<T> {
-		self.row.get_checked(self.idx).map_err(Error::from)
+		self.row.get(self.idx).map_err(Error::from)
 	}
 
 	fn deserialize_any_helper<V: de::Visitor<'de>>(self, visitor: V, value: Value) -> Result<V::Value> {
