@@ -12,6 +12,8 @@ Add this to your Cargo.toml:
 serde_rusqlite = "0.19"
 ```
 
+[![Build Status](https://travis-ci.org/twistedfall/serde_rusqlite.svg?branch=master)](https://travis-ci.org/twistedfall/serde_rusqlite)
+
 ## Serde Rusqlite
 
 This crate provides convenience functions to bridge serde and rusqlite. With their help
