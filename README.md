@@ -9,7 +9,7 @@ See [full documentation](https://docs.rs/serde_rusqlite)
 Add this to your Cargo.toml:
 ```
 [dependencies]
-serde_rusqlite = "0.19"
+serde_rusqlite = "0.20"
 ```
 
 [![Build Status](https://travis-ci.org/twistedfall/serde_rusqlite.svg?branch=master)](https://travis-ci.org/twistedfall/serde_rusqlite)
