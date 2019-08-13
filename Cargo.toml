@@ -1,6 +1,6 @@
 [package]
 name = "serde_rusqlite"
-version = "0.20.0"
+version = "0.21.0"
 description = "Serialize/deserialize rusqlite rows"
 keywords = ["serde", "sqlite", "rusqlite", "serialization", "deserialization"]
 categories = ["database", "encoding", ]
@@ -14,7 +14,7 @@ repository = "https://github.com/twistedfall/serde_rusqlite"
 travis-ci = { repository = "twistedfall/serde_rusqlite", branch = "master" }
 
 [dependencies]
-rusqlite = "0.19"
+rusqlite = "0.20"
 serde = "1.0"
 
 [dev-dependencies]
