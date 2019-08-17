@@ -27,7 +27,7 @@ fn test_value_same<T: serde::Serialize + serde::de::DeserializeOwned + PartialEq
 }
 
 fn test_values<D: serde::de::DeserializeOwned + PartialEq + Debug>(db_type: &str, value_ser: &impl serde::Serialize, value_de: &D) {
-	test_values_with_cmp_fn::<_, _, &Fn(&D, &D) -> bool>(db_type, value_ser, value_de, None)
+	test_values_with_cmp_fn::<_, _, &dyn Fn(&D, &D) -> bool>(db_type, value_ser, value_de, None)
 }
 
 fn test_ser_err<S: serde::Serialize, F: Fn(&super::Error) -> bool>(value: &S, err_check_fn: F) {

@@ -23,7 +23,7 @@ pub type Result<T> = result::Result<T, Error>;
 
 impl Error {
 	fn unsupported(err: impl Into<String>) -> Self {
-		Error::Unsupported(err.into()).into()
+		Error::Unsupported(err.into())
 	}
 
 	/// Create the instance of `Unsupported` during serialization `Error`

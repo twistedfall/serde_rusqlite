@@ -1,11 +1,12 @@
 extern crate rusqlite;
 extern crate serde;
 
+use std::{f32, f64};
+
 use super::{Error, Result};
 use self::rusqlite::types::Value;
 use self::serde::de;
 use self::serde::de::IntoDeserializer;
-use std::{f32, f64};
 
 macro_rules! forward_to_row_value_deserializer {
 	($($fun:ident)*) => {
@@ -42,13 +43,8 @@ impl<'de> RowDeserializer<'de> {
 impl<'de> de::Deserializer<'de> for RowDeserializer<'de> {
 	type Error = Error;
 
-	fn deserialize_map<V: de::Visitor<'de>>(self, visitor: V) -> Result<V::Value> {
-		visitor.visit_map(RowMapAccess { idx: 0, de: self })
-	}
-
-	fn deserialize_struct<V: de::Visitor<'de>>(mut self, _name: &'static str, fields: &'static [&'static str], visitor: V) -> Result<V::Value> {
-		self.columns = Some(fields);
-		self.deserialize_map(visitor)
+	fn deserialize_unit_struct<V: de::Visitor<'de>>(self, name: &'static str, visitor: V) -> Result<V::Value> {
+		self.row_value().deserialize_unit_struct(name, visitor)
 	}
 
 	fn deserialize_newtype_struct<V: de::Visitor<'de>>(self, _name: &'static str, visitor: V) -> Result<V::Value> {
@@ -59,8 +55,13 @@ impl<'de> de::Deserializer<'de> for RowDeserializer<'de> {
 		visitor.visit_seq(RowSeqAccess { idx: 0, de: self })
 	}
 
-	fn deserialize_unit_struct<V: de::Visitor<'de>>(self, name: &'static str, visitor: V) -> Result<V::Value> {
-		self.row_value().deserialize_unit_struct(name, visitor)
+	fn deserialize_map<V: de::Visitor<'de>>(self, visitor: V) -> Result<V::Value> {
+		visitor.visit_map(RowMapAccess { idx: 0, de: self })
+	}
+
+	fn deserialize_struct<V: de::Visitor<'de>>(mut self, _name: &'static str, fields: &'static [&'static str], visitor: V) -> Result<V::Value> {
+		self.columns = Some(fields);
+		self.deserialize_map(visitor)
 	}
 
 	fn deserialize_enum<V: de::Visitor<'de>>(self, name: &'static str, variants: &'static [&'static str], visitor: V) -> Result<V::Value> {
@@ -106,6 +107,11 @@ impl<'de, RI: rusqlite::RowIndex + Copy> RowValue<'de, RI> {
 
 impl<'de, RI: rusqlite::RowIndex + Copy> de::Deserializer<'de> for RowValue<'de, RI> {
 	type Error = Error;
+
+	fn deserialize_any<V: de::Visitor<'de>>(self, visitor: V) -> Result<V::Value> {
+		let val = self.value()?;
+		self.deserialize_any_helper(visitor, val)
+	}
 
 	fn deserialize_bool<V: de::Visitor<'de>>(self, visitor: V) -> Result<V::Value> {
 		match self.value()? {
@@ -158,11 +164,6 @@ impl<'de, RI: rusqlite::RowIndex + Copy> de::Deserializer<'de> for RowValue<'de,
 		visitor.visit_enum(EnumAccess(self.value()?))
 	}
 
-	fn deserialize_any<V: de::Visitor<'de>>(self, visitor: V) -> Result<V::Value> {
-		let val = self.value()?;
-		self.deserialize_any_helper(visitor, val)
-	}
-
 	forward_to_deserialize_any! {
 		i8 i16 i32 i64 u8 u16 u32 u64 char str string bytes
 		newtype_struct seq tuple
@@ -181,10 +182,10 @@ impl<'de> de::MapAccess<'de> for RowMapAccess<'de> {
 	fn next_key_seed<K: de::DeserializeSeed<'de>>(&mut self, seed: K) -> Result<Option<K::Value>> {
 		match self.de.columns {
 			Some(columns) => {
-				if self.idx as usize >= columns.len() {
+				if self.idx >= columns.len() {
 					Ok(None)
 				} else {
-					seed.deserialize(columns[self.idx as usize].into_deserializer()).map(Some)
+					seed.deserialize(columns[self.idx].into_deserializer()).map(Some)
 				}
 			},
 			None => Ok(None)
@@ -193,7 +194,7 @@ impl<'de> de::MapAccess<'de> for RowMapAccess<'de> {
 
 	fn next_value_seed<V: de::DeserializeSeed<'de>>(&mut self, seed: V) -> Result<V::Value> {
 		if let Some(columns) = self.de.columns {
-			let out = seed.deserialize(RowValue { idx: columns[self.idx as usize], row: self.de.row });
+			let out = seed.deserialize(RowValue { idx: columns[self.idx], row: self.de.row });
 			self.idx += 1;
 			out
 		} else {

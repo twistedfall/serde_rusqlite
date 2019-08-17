@@ -1,6 +1,7 @@
 [package]
 name = "serde_rusqlite"
 version = "0.21.0"
+edition = "2018"
 description = "Serialize/deserialize rusqlite rows"
 keywords = ["serde", "sqlite", "rusqlite", "serialization", "deserialization"]
 categories = ["database", "encoding", ]

@@ -1,9 +1,8 @@
-extern crate rusqlite;
-extern crate serde;
+use crate::{Error, PositionalParamSlice, Result};
 
-use super::{Error, PositionalParamSlice, Result};
 use super::tosql::ToSqlSerializer;
-use self::serde::ser;
+
+use serde::ser;
 
 macro_rules! forward_tosql {
 	($fun:ident, $type:ty) => {
@@ -59,7 +58,7 @@ impl ser::Serializer for PositionalSliceSerializer {
 	forward_tosql!(serialize_none);
 	forward_tosql!(serialize_unit);
 
-	fn serialize_some<T: ? Sized + serde::Serialize>(self, value: &T) -> Result<Self::Ok> {
+	fn serialize_some<T: ?Sized + serde::Serialize>(self, value: &T) -> Result<Self::Ok> {
 		value.serialize(self)
 	}
 
@@ -73,16 +72,18 @@ impl ser::Serializer for PositionalSliceSerializer {
 		Ok(self.0)
 	}
 
-	fn serialize_newtype_struct<T: ? Sized + serde::Serialize>(self, _name: &'static str, value: &T) -> Result<Self::Ok> {
+	fn serialize_newtype_struct<T: ?Sized + serde::Serialize>(self, _name: &'static str, value: &T) -> Result<Self::Ok> {
 		value.serialize(self)
 	}
 
-	fn serialize_newtype_variant<T: ? Sized + serde::Serialize>(self, _name: &'static str, _variant_index: u32, _variant: &'static str, value: &T) -> Result<Self::Ok> {
+	fn serialize_newtype_variant<T: ?Sized + serde::Serialize>(self, _name: &'static str, _variant_index: u32, _variant: &'static str, value: &T) -> Result<Self::Ok> {
 		value.serialize(self)
 	}
 
 	fn serialize_seq(mut self, len: Option<usize>) -> Result<Self::SerializeSeq> {
-		len.map(|len| self.0.reserve_exact(len));
+		if let Some(len) = len {
+			self.0.reserve_exact(len);
+		}
 		Ok(self)
 	}
 
@@ -110,7 +111,7 @@ impl ser::SerializeSeq for PositionalSliceSerializer {
 	type Ok = PositionalParamSlice;
 	type Error = Error;
 
-	fn serialize_element<T: ? Sized + serde::Serialize>(&mut self, value: &T) -> Result<()> {
+	fn serialize_element<T: ?Sized + serde::Serialize>(&mut self, value: &T) -> Result<()> {
 		self.0.push(value.serialize(ToSqlSerializer)?);
 		Ok(())
 	}
@@ -124,7 +125,7 @@ impl ser::SerializeTuple for PositionalSliceSerializer {
 	type Ok = PositionalParamSlice;
 	type Error = Error;
 
-	fn serialize_element<T: ? Sized + serde::Serialize>(&mut self, value: &T) -> Result<()> {
+	fn serialize_element<T: ?Sized + serde::Serialize>(&mut self, value: &T) -> Result<()> {
 		self.0.push(value.serialize(ToSqlSerializer)?);
 		Ok(())
 	}
@@ -138,7 +139,7 @@ impl ser::SerializeTupleStruct for PositionalSliceSerializer {
 	type Ok = PositionalParamSlice;
 	type Error = Error;
 
-	fn serialize_field<T: ? Sized + serde::Serialize>(&mut self, value: &T) -> Result<()> {
+	fn serialize_field<T: ?Sized + serde::Serialize>(&mut self, value: &T) -> Result<()> {
 		self.0.push(value.serialize(ToSqlSerializer)?);
 		Ok(())
 	}
@@ -152,7 +153,7 @@ impl ser::SerializeTupleVariant for PositionalSliceSerializer {
 	type Ok = PositionalParamSlice;
 	type Error = Error;
 
-	fn serialize_field<T: ? Sized + serde::Serialize>(&mut self, value: &T) -> Result<()> {
+	fn serialize_field<T: ?Sized + serde::Serialize>(&mut self, value: &T) -> Result<()> {
 		self.0.push(value.serialize(ToSqlSerializer)?);
 		Ok(())
 	}

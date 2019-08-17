@@ -1,18 +1,16 @@
-extern crate rusqlite;
-extern crate serde;
+use serde::ser;
 
-use super::{Error, Result};
-use self::serde::ser;
+use crate::{Error, Result};
 
 pub struct BlobSerializer {
 	pub buf: Vec<u8>,
 }
 
 impl ser::SerializeSeq for BlobSerializer {
-	type Ok = Box<rusqlite::types::ToSql>;
+	type Ok = Box<dyn rusqlite::types::ToSql>;
 	type Error = Error;
 
-	fn serialize_element<T: ? Sized + serde::Serialize>(&mut self, value: &T) -> Result<()> {
+	fn serialize_element<T: ?Sized + serde::Serialize>(&mut self, value: &T) -> Result<()> {
 		self.buf.push(value.serialize(U8Serializer)?);
 		Ok(())
 	}
@@ -54,12 +52,12 @@ impl ser::Serializer for U8Serializer {
 	ser_unimpl!(serialize_bytes, &[u8]);
 
 	fn serialize_none(self) -> Result<Self::Ok> { Err(Error::ser_unsupported("None")) }
-	fn serialize_some<T: ? Sized + serde::Serialize>(self, _value: &T) -> Result<Self::Ok> { Err(Error::ser_unsupported("Some")) }
+	fn serialize_some<T: ?Sized + serde::Serialize>(self, _value: &T) -> Result<Self::Ok> { Err(Error::ser_unsupported("Some")) }
 	fn serialize_unit(self) -> Result<Self::Ok> { Err(Error::ser_unsupported("()")) }
 	fn serialize_unit_struct(self, _name: &'static str) -> Result<Self::Ok> { self.serialize_unit() }
 	fn serialize_unit_variant(self, _name: &'static str, _variant_index: u32, _variant: &'static str) -> Result<Self::Ok> { self.serialize_unit() }
-	fn serialize_newtype_struct<T: ? Sized + serde::Serialize>(self, _name: &'static str, _value: &T) -> Result<Self::Ok> { Err(Error::ser_unsupported("newtype_struct")) }
-	fn serialize_newtype_variant<T: ? Sized + serde::Serialize>(self, _name: &'static str, _variant_index: u32, _variant: &'static str, _value: &T) -> Result<Self::Ok> { Err(Error::ser_unsupported("newtype_variant")) }
+	fn serialize_newtype_struct<T: ?Sized + serde::Serialize>(self, _name: &'static str, _value: &T) -> Result<Self::Ok> { Err(Error::ser_unsupported("newtype_struct")) }
+	fn serialize_newtype_variant<T: ?Sized + serde::Serialize>(self, _name: &'static str, _variant_index: u32, _variant: &'static str, _value: &T) -> Result<Self::Ok> { Err(Error::ser_unsupported("newtype_variant")) }
 	fn serialize_seq(self, _len: Option<usize>) -> Result<Self::SerializeSeq> { Err(Error::ser_unsupported("seq")) }
 	fn serialize_tuple(self, _len: usize) -> Result<Self::SerializeTuple> { Err(Error::ser_unsupported("tuple")) }
 	fn serialize_tuple_struct(self, _name: &'static str, _len: usize) -> Result<Self::SerializeTupleStruct> { Err(Error::ser_unsupported("tuple_struct")) }

@@ -1,9 +1,8 @@
-extern crate rusqlite;
-extern crate serde;
+use serde::ser;
 
-use super::{Error, Result};
+use crate::{Error, Result};
+
 use super::blob::BlobSerializer;
-use self::serde::ser;
 
 macro_rules! tosql_ser {
 	($fun:ident, &$type:ty) => {
@@ -21,7 +20,7 @@ macro_rules! tosql_ser {
 pub struct ToSqlSerializer;
 
 impl ser::Serializer for ToSqlSerializer {
-	type Ok = Box<rusqlite::types::ToSql>;
+	type Ok = Box<dyn rusqlite::types::ToSql>;
 	type Error = Error;
 	type SerializeSeq = BlobSerializer;
 	type SerializeTuple = ser::Impossible<Self::Ok, Self::Error>;
@@ -52,7 +51,7 @@ impl ser::Serializer for ToSqlSerializer {
 	}
 
 	fn serialize_f32(self, v: f32) -> Result<Self::Ok> {
-		self.serialize_f64(v as f64)
+		self.serialize_f64(f64::from(v))
 	}
 
 	fn serialize_char(self, v: char) -> Result<Self::Ok> {
@@ -63,7 +62,7 @@ impl ser::Serializer for ToSqlSerializer {
 		Ok(Box::new(rusqlite::types::Value::Null))
 	}
 
-	fn serialize_some<T: ? Sized + serde::Serialize>(self, value: &T) -> Result<Self::Ok> {
+	fn serialize_some<T: ?Sized + serde::Serialize>(self, value: &T) -> Result<Self::Ok> {
 		Ok(value.serialize(self)?)
 	}
 
@@ -79,11 +78,11 @@ impl ser::Serializer for ToSqlSerializer {
 		self.serialize_str(variant)
 	}
 
-	fn serialize_newtype_struct<T: ? Sized + serde::Serialize>(self, _name: &'static str, value: &T) -> Result<Self::Ok> {
+	fn serialize_newtype_struct<T: ?Sized + serde::Serialize>(self, _name: &'static str, value: &T) -> Result<Self::Ok> {
 		Ok(value.serialize(self)?)
 	}
 
-	fn serialize_newtype_variant<T: ? Sized + serde::Serialize>(self, name: &'static str, _variant_index: u32, _variant: &'static str, value: &T) -> Result<Self::Ok> {
+	fn serialize_newtype_variant<T: ?Sized + serde::Serialize>(self, name: &'static str, _variant_index: u32, _variant: &'static str, value: &T) -> Result<Self::Ok> {
 		self.serialize_newtype_struct(name, value)
 	}
 
