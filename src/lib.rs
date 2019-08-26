@@ -46,13 +46,9 @@
 //!
 //! # Examples
 //! ```
-//! extern crate rusqlite;
-//! #[macro_use]
-//! extern crate serde_derive;
-//! extern crate serde_rusqlite;
-//!
-//! use serde_rusqlite::*;
 //! use rusqlite::NO_PARAMS;
+//! use serde_derive::{Deserialize, Serialize};
+//! use serde_rusqlite::*;
 //!
 //! #[derive(Serialize, Deserialize, Debug, PartialEq)]
 //! struct Example {
@@ -65,24 +61,31 @@
 //!    connection.execute("CREATE TABLE example (id INT, name TEXT)", NO_PARAMS).unwrap();
 //!
 //!    // using structure to generate named bound query arguments
-//!    let row1 = Example{ id: 1, name: "first name".into() };
+//!    let row1 = Example { id: 1, name: "first name".into() };
 //!    connection.execute_named("INSERT INTO example (id, name) VALUES (:id, :name)", &to_params_named(&row1).unwrap().to_slice()).unwrap();
 //!
 //!    // using tuple to generate positional bound query arguments
 //!    let row2 = (2, "second name");
 //!    connection.execute("INSERT INTO example (id, name) VALUES (?, ?)", &to_params(&row2).unwrap().to_slice()).unwrap();
 //!
-//!    // deserializing using query() and from_rows()
+//!    // deserializing using query() and from_rows(), the most efficient way
 //!    let mut statement = connection.prepare("SELECT * FROM example").unwrap();
 //!    let mut res = from_rows::<Example>(statement.query(NO_PARAMS).unwrap());
-//!    assert_eq!(res.next().unwrap(), row1);
-//!    assert_eq!(res.next().unwrap(), Example{ id: 2, name: "second name".into() });
+//!    assert_eq!(res.next().unwrap().unwrap(), row1);
+//!    assert_eq!(res.next().unwrap().unwrap(), Example { id: 2, name: "second name".into() });
 //!
-//!    // deserializing using query_and_then() and from_row()
+//!    // deserializing using query_and_then() and from_row(), incurs extra overhead in from_row() call
 //!    let mut statement = connection.prepare("SELECT * FROM example").unwrap();
 //!    let mut rows = statement.query_and_then(NO_PARAMS, from_row::<Example>).unwrap();
 //!    assert_eq!(rows.next().unwrap().unwrap(), row1);
-//!    assert_eq!(rows.next().unwrap().unwrap(), Example{ id: 2, name: "second name".into() });
+//!    assert_eq!(rows.next().unwrap().unwrap(), Example { id: 2, name: "second name".into() });
+//!
+//!    // deserializing using query_and_then() and from_row_with_columns(), better performance than from_row()
+//!    let mut statement = connection.prepare("SELECT * FROM example").unwrap();
+//!    let columns = columns_from_statement(&statement);
+//!    let mut rows = statement.query_and_then(NO_PARAMS, |row| from_row_with_columns::<Example>(row, &columns)).unwrap();
+//!    assert_eq!(rows.next().unwrap().unwrap(), row1);
+//!    assert_eq!(rows.next().unwrap().unwrap(), Example { id: 2, name: "second name".into() });
 //!
 //!    // deserializing using query() and from_rows_ref()
 //!    let mut statement = connection.prepare("SELECT * FROM example").unwrap();
@@ -90,49 +93,16 @@
 //!    {
 //!       // only first record is deserialized here
 //!       let mut res = from_rows_ref::<Example>(&mut rows);
-//!       assert_eq!(res.next().unwrap(), row1);
+//!       assert_eq!(res.next().unwrap().unwrap(), row1);
 //!    }
 //!    // the second record is deserialized using the original Rows iterator
-//!    assert_eq!(from_row::<Example>(&rows.next().unwrap().unwrap()).unwrap(), Example{ id: 2, name: "second name".into() });
-//!
-//!    // deserializing using query() and from_rows_with_columns()
-//!    let mut statement = connection.prepare("SELECT * FROM example").unwrap();
-//!    let columns = columns_from_statement(&statement);
-//!    let mut res = from_rows_with_columns::<Example, _>(statement.query(NO_PARAMS).unwrap(), &columns);
-//!    assert_eq!(res.next().unwrap(), row1);
-//!    assert_eq!(res.next().unwrap(), Example{ id: 2, name: "second name".into() });
-//!
-//!    // deserializing using query_and_then() and from_row_with_columns()
-//!    let mut statement = connection.prepare("SELECT * FROM example").unwrap();
-//!    let columns = columns_from_statement(&statement);
-//!    let mut rows = statement.query_and_then(NO_PARAMS, |row| from_row_with_columns::<Example, _>(row, &columns)).unwrap();
-//!    assert_eq!(rows.next().unwrap().unwrap(), row1);
-//!    assert_eq!(rows.next().unwrap().unwrap(), Example{ id: 2, name: "second name".into() });
-//!
-//!    // deserializing using query() and from_rows_ref_with_columns()
-//!    let mut statement = connection.prepare("SELECT * FROM example").unwrap();
-//!    let columns = columns_from_statement(&statement);
-//!    let mut rows = statement.query(NO_PARAMS).unwrap();
-//!    {
-//!       // only first record is deserialized here
-//!       let mut res = from_rows_ref_with_columns::<Example, _>(&mut rows, &columns);
-//!       assert_eq!(res.next().unwrap(), row1);
-//!    }
-//!    // the second record is deserialized using the original Rows iterator
-//!    assert_eq!(from_row_with_columns::<Example, _>(&rows.next().unwrap().unwrap(), &columns).unwrap(), Example{ id: 2, name: "second name".into() });
-//!
+//!    assert_eq!(from_row::<Example>(&rows.next().unwrap().unwrap()).unwrap(), Example { id: 2, name: "second name".into() });
 //! }
 //! ```
 
-#[cfg(test)]
-#[macro_use]
-extern crate matches;
-extern crate rusqlite;
-#[macro_use]
-extern crate serde;
-#[cfg(test)]
-#[macro_use]
-extern crate serde_derive;
+pub use de::{DeserRows, DeserRowsRef, RowDeserializer};
+pub use error::{Error, Result};
+pub use ser::{NamedParamSlice, NamedSliceSerializer, PositionalParamSlice, PositionalSliceSerializer};
 
 pub mod error;
 pub mod de;
@@ -140,113 +110,53 @@ pub mod ser;
 #[cfg(test)]
 mod tests;
 
-pub use de::RowDeserializer;
-pub use error::{Error, Result};
-pub use ser::{NamedParamSlice, NamedSliceSerializer, PositionalParamSlice, PositionalSliceSerializer};
-use std::marker;
-
-/// Iterator to automatically deserialize each row from owned `rusqlite::Rows` into `D: serde::Deserialize`
-pub struct DeserRows<'rows, D, S: 'rows> {
-	rows: rusqlite::Rows<'rows>,
-	columns: Option<&'rows [S]>,
-	d: marker::PhantomData<*const D>,
-}
-
-impl<'rows, D: serde::de::DeserializeOwned, S: AsRef<str>> Iterator for DeserRows<'rows, D, S> {
-	type Item = D;
-
-	fn next(&mut self) -> Option<Self::Item> {
-		if let Ok(Some(row)) = self.rows.next() {
-			match self.columns {
-				Some(columns) => from_row_with_columns(&row, columns).ok(),
-				None => from_row(&row).ok(),
-			}
-		} else {
-			None
-		}
-	}
-}
-
-/// Iterator to automatically deserialize each row from borrowed `rusqlite::Rows` into `D: serde::Deserialize`
-pub struct DeserRowsRef<'rows, 'stmt: 'rows, D, S: 'rows> {
-	rows: &'rows mut rusqlite::Rows<'stmt>,
-	columns: Option<&'rows [S]>,
-	d: marker::PhantomData<*const D>,
-}
-
-impl<'rows, 'stmt, D: serde::de::DeserializeOwned, S: AsRef<str>> Iterator for DeserRowsRef<'rows, 'stmt, D, S> {
-	type Item = D;
-
-	fn next(&mut self) -> Option<Self::Item> {
-		if let Ok(Some(row)) = self.rows.next() {
-			match self.columns {
-				Some(columns) => from_row_with_columns(&row, columns).ok(),
-				None => from_row(&row).ok(),
-			}
-		} else {
-			None
-		}
-	}
-}
-
-/// Returns column names of the statement the way `*_with_columns()` method family expects them
+/// Returns column names of the statement the way `from_row_with_columns()` method expects them
 ///
 /// This function is needed because by default `column_names()` returns `Vec<&str>` which
-/// ties it to the lifetime of the `Statement`. This way we won't be able to run for example
-/// `.query_map()` because it mutably borrows `Statement` and by that time it's already borrowed
-/// for columns. So this function owns all column names to detach them from the lifetime of `Statement`.
+/// ties it to the lifetime of the `rusqlite::Statement`. This way we won't be able to run for example
+/// `.query_map()` because it mutably borrows `rusqlite::Statement` and by that time it's already borrowed
+/// for columns. So this function owns all column names to detach them from the lifetime of `rusqlite::Statement`.
 pub fn columns_from_statement(stmt: &rusqlite::Statement) -> Vec<String> {
 	stmt.column_names().into_iter().map(str::to_owned).collect()
 }
 
-/// Deserializes an instance of `D: serde::Deserialize` from `rusqlite::Row`. This function will not work for
-/// deserialization into types that need field names, but don't carry them on their own, e.g. `Map`.
+/// Deserializes an instance of `D: serde::Deserialize` from `rusqlite::Row`
 ///
-/// You should supply this function to `query_map()`
-pub fn from_row<'row, D: serde::de::DeserializeOwned>(row: &'row rusqlite::Row) -> Result<D> {
-	D::deserialize(RowDeserializer::from_row(row))
+/// Calling this function incurs allocation and processing overhead because we need to fetch column names from the row.
+/// So use with care when calling this function in a loop or check `from_row_with_columns()` to avoid that overhead.
+///
+/// You should supply this function to `query_map()`.
+pub fn from_row<D: serde::de::DeserializeOwned>(row: &rusqlite::Row) -> Result<D> {
+	let columns = row.columns(); // fixme: use row.column_names() when https://github.com/jgallagher/rusqlite/pull/564 is merged
+	let columns_ref = columns.iter().map(|x| x.name().to_owned()).collect::<Vec<_>>();
+	from_row_with_columns(row, &columns_ref)
 }
 
-/// Deserializes any instance of `D: serde::Deserialize` from `rusqlite::Row` with specified columns. You need to call
-/// this version if you're deserializing into e.g. `Map` because it needs field names, but doesn't specify them. Also
-/// note that `columns` will only be used in this case, otherwise `D` type field information will be used.
+/// Deserializes any instance of `D: serde::Deserialize` from `rusqlite::Row` with specified columns
 ///
-/// You should use this function in the closure you supply to `query_map()`
-pub fn from_row_with_columns<'row, D: serde::de::DeserializeOwned, S: AsRef<str>>(row: &'row rusqlite::Row, columns: &'row [S]) -> Result<D> {
-	let columns_ref = columns.iter().map(AsRef::as_ref).collect::<Vec<_>>();
-	D::deserialize(RowDeserializer::from_row_with_columns(row, &columns_ref))
+/// Use this function over `from_row()` to avoid allocation and overhead for fetching column names. To get columns names
+/// you can use `columns_from_statement()`.
+///
+/// You should use this function in the closure you supply to `query_map()`.
+pub fn from_row_with_columns<D: serde::de::DeserializeOwned>(row: &rusqlite::Row, columns: &[String]) -> Result<D> {
+	D::deserialize(RowDeserializer::from_row_with_columns(row, &columns))
 }
 
-/// Returns iterator that owns `rusqlite::Rows` and deserializes all records from it into instances of `D: serde::Deserialize`.
+/// Returns iterator that owns `rusqlite::Rows` and deserializes all records from it into instances of `D: serde::Deserialize`
+///
 /// Also see `from_row()` for some specific info.
 ///
-/// This function covers most of the use cases and is easier to use than the alternative `from_rows_ref_with_columns()`.
-pub fn from_rows<'rows, D: serde::de::DeserializeOwned>(rows: rusqlite::Rows<'rows>) -> DeserRows<'rows, D, String> {
-	DeserRows { rows, columns: None, d: marker::PhantomData }
-}
-
-/// Returns iterator that owns `rusqlite::Rows` and deserializes all records from it into instances of `D: serde::Deserialize`.
-/// Also see `from_row_with_columns()` for some specific info.
-///
-/// This function covers most of the use cases and is easier to use than the alternative `from_rows_ref_with_columns()`.
-pub fn from_rows_with_columns<'rows, D: serde::de::DeserializeOwned, S: AsRef<str>>(rows: rusqlite::Rows<'rows>, columns: &'rows [S]) -> DeserRows<'rows, D, S> {
-	DeserRows { rows, columns: Some(columns), d: marker::PhantomData }
+/// This function covers most of the use cases and is easier to use than the alternative `from_rows_ref()`.
+pub fn from_rows<D: serde::de::DeserializeOwned>(rows: rusqlite::Rows) -> DeserRows<D> {
+	DeserRows::new(rows)
 }
 
 /// Returns iterator that borrows `rusqlite::Rows` and deserializes records from it into instances of `D: serde::Deserialize`
 ///
 /// Use this function instead of `from_rows()` when you still need iterator with the remaining rows after deserializing some
 /// of them.
-pub fn from_rows_ref<'rows, 'stmt, D: serde::de::DeserializeOwned>(rows: &'rows mut rusqlite::Rows<'stmt>) -> DeserRowsRef<'rows, 'stmt, D, String> {
-	DeserRowsRef { rows, columns: None, d: marker::PhantomData }
-}
-
-/// Returns iterator that borrows `rusqlite::Rows` and deserializes records from it into instances of `D: serde::Deserialize`
-///
-/// Use this function instead of `from_rows_with_columns()` when you still need iterator with the remaining rows after
-/// deserializing some of them.
-pub fn from_rows_ref_with_columns<'rows, 'stmt, D: serde::de::DeserializeOwned, S: AsRef<str>>(rows: &'rows mut rusqlite::Rows<'stmt>, columns: &'rows [S]) -> DeserRowsRef<'rows, 'stmt, D, S> {
-	DeserRowsRef { rows, columns: Some(columns), d: marker::PhantomData }
+pub fn from_rows_ref<'rows, 'stmt, D: serde::de::DeserializeOwned>(rows: &'rows mut rusqlite::Rows<'stmt>) -> DeserRowsRef<'rows, 'stmt, D> {
+	DeserRowsRef::new(rows)
 }
 
 /// Serializes an instance of `S: serde::Serialize` into structure for positional bound query arguments

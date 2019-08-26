@@ -1,10 +1,14 @@
-extern crate rusqlite;
-extern crate serde;
-extern crate serde_bytes;
+use std::{
+	collections,
+	f32,
+	f64,
+	fmt::Debug,
+};
 
-use std::{collections, f32, f64};
-use std::fmt::Debug;
-use self::rusqlite::NO_PARAMS;
+use rusqlite::NO_PARAMS;
+use serde_derive::{Deserialize, Serialize};
+
+use matches::matches;
 
 fn make_connection() -> rusqlite::Connection {
 	make_connection_with_spec("
@@ -150,13 +154,13 @@ fn test_map() {
 		let mut stmt = con.prepare("SELECT * FROM test").unwrap();
 		{
 			let columns = super::columns_from_statement(&stmt);
-			let mut res = stmt.query_and_then_named(&[], |row| super::from_row_with_columns::<collections::HashMap<String, i64>, _>(row, &columns)).unwrap();
+			let mut res = stmt.query_and_then_named(&[], |row| super::from_row_with_columns::<collections::HashMap<String, i64>>(row, &columns)).unwrap();
 			assert_eq!(res.next().unwrap().unwrap(), src);
 		}
-		// deserialization without columns => empty hashmap
+		// deserialization without columns
 		{
 			let mut res = stmt.query_and_then_named(&[], super::from_row::<collections::HashMap<String, i64>>).unwrap();
-			assert_eq!(res.next().unwrap().unwrap(), collections::HashMap::<String, i64>::new());
+			assert_eq!(res.next().unwrap().unwrap(), src);
 		}
 	}
 
@@ -176,13 +180,13 @@ fn test_map() {
 		// deserialization with columns
 		{
 			let columns = super::columns_from_statement(&stmt);
-			let mut res = stmt.query_and_then_named(&[], |row| super::from_row_with_columns::<collections::HashMap<char, i64>, _>(row, &columns)).unwrap();
+			let mut res = stmt.query_and_then_named(&[], |row| super::from_row_with_columns::<collections::HashMap<char, i64>>(row, &columns)).unwrap();
 			assert_eq!(res.next().unwrap().unwrap(), src);
 		}
 		// deserialization with custom columns
 		{
-			let columns = vec!["a", "b"];
-			let mut res = stmt.query_and_then_named(&[], |row| super::from_row_with_columns::<collections::HashMap<char, i64>, _>(row, columns.as_slice())).unwrap();
+			let columns = vec!["a".to_owned(), "b".to_owned()];
+			let mut res = stmt.query_and_then_named(&[], |row| super::from_row_with_columns::<collections::HashMap<char, i64>>(row, &columns)).unwrap();
 			let mut src = src.clone();
 			src.remove(&'c');
 			assert_eq!(res.next().unwrap().unwrap(), src);
@@ -201,9 +205,10 @@ fn test_tuple() {
 	// deserialization with columns
 	{
 		let columns = super::columns_from_statement(&stmt);
-		let mut res = stmt.query_and_then(NO_PARAMS, |row| super::from_row_with_columns::<Test, _>(row, &columns)).unwrap();
+		let mut res = stmt.query_and_then(NO_PARAMS, |row| super::from_row_with_columns::<Test>(row, &columns)).unwrap();
 		assert_eq!(res.next().unwrap().unwrap(), src);
 	}
+
 	// deserialization without columns
 	{
 		let mut res = stmt.query_and_then(NO_PARAMS, super::from_row::<Test>).unwrap();
@@ -249,7 +254,7 @@ fn test_struct() {
 		let mut stmt = con.prepare("SELECT * FROM test").unwrap();
 		{
 			let columns = super::columns_from_statement(&stmt);
-			let mut res = stmt.query_and_then(NO_PARAMS, |row| super::from_row_with_columns::<Test, _>(row, &columns)).unwrap();
+			let mut res = stmt.query_and_then(NO_PARAMS, |row| super::from_row_with_columns::<Test>(row, &columns)).unwrap();
 			assert_eq!(res.next().unwrap().unwrap(), src);
 		}
 		// deserialization without columns
@@ -276,24 +281,11 @@ fn test_struct() {
 		con.execute_named("INSERT INTO test VALUES(:f_integer, :f_real, :f_text, :f_blob, :f_null)", &super::to_params_named(&src).unwrap().to_slice()).unwrap();
 		// deserialization with columns
 		let mut stmt = con.prepare("SELECT * FROM test").unwrap();
-		{
-			let columns = super::columns_from_statement(&stmt);
-			let mut rows = stmt.query(NO_PARAMS).unwrap();
-			{
-				let mut res = super::from_rows_ref_with_columns::<Test, _>(&mut rows, &columns);
-				assert_eq!(res.next().unwrap(), src);
-			}
-			assert_eq!(super::from_row_with_columns::<Test, _>(&rows.next().unwrap().unwrap(), &columns).unwrap(), src);
-		}
-		// deserialization without columns
-		{
-			let mut rows = stmt.query(NO_PARAMS).unwrap();
-			{
-				let mut res = super::from_rows_ref::<Test>(&mut rows);
-				assert_eq!(res.next().unwrap(), src);
-			}
-			assert_eq!(super::from_row::<Test>(&rows.next().unwrap().unwrap()).unwrap(), src);
-		}
+		let mut rows = stmt.query(NO_PARAMS).unwrap();
+		// deserialization
+		let mut res = super::from_rows_ref::<Test>(&mut rows);
+		assert_eq!(res.next().unwrap().unwrap(), src);
+		assert_eq!(super::from_row::<Test>(&rows.next().unwrap().unwrap()).unwrap(), src);
 	}
 
 	{
@@ -310,17 +302,51 @@ fn test_struct() {
 		// serialization
 		let src = Test { f_blob: vec![5, 10, 15], f_integer: 10, f_real: -65.3, f_text: "".into(), f_null: Some(43) };
 		con.execute_named("INSERT INTO test VALUES(:f_integer, :f_real, :f_text, :f_blob, :f_null)", &super::to_params_named(&src).unwrap().to_slice()).unwrap();
-		// deserialization with columns
+		// deserialization
 		let mut stmt = con.prepare("SELECT * FROM test").unwrap();
-		{
-			let columns = super::columns_from_statement(&stmt);
-			let mut res = super::from_rows_with_columns::<Test, _>(stmt.query(NO_PARAMS).unwrap(), &columns);
-			assert_eq!(res.next().unwrap(), src);
-		}
-		// deserialization without columns
-		{
-			let mut res = super::from_rows::<Test>(stmt.query(NO_PARAMS).unwrap());
-			assert_eq!(res.next().unwrap(), src);
-		}
+		let mut res = super::from_rows::<Test>(stmt.query(NO_PARAMS).unwrap());
+		assert_eq!(res.next().unwrap().unwrap(), src);
+	}
+}
+
+#[test]
+fn test_attrs() {
+	let con = make_connection();
+	#[derive(Serialize, Debug, PartialEq)]
+	struct Test {
+		#[serde(rename = "f_real")]
+		custom_real: f64,
+		f_integer: i64,
+		f_blob: Vec<u8>,
+		f_null: Option<i64>,
+		f_text: String,
+	}
+	let src = Test { f_blob: vec![5, 10, 15], f_integer: 10, custom_real: -65.3, f_text: "test".into(), f_null: Some(43) };
+	con.execute_named("INSERT INTO test VALUES(:f_integer, :f_real, :f_text, :f_blob, :f_null)", &super::to_params_named(&src).unwrap().to_slice()).unwrap();
+	#[derive(Deserialize, Debug, PartialEq)]
+	struct TestDeser {
+		f_blob: Vec<u8>,
+		#[serde(alias = "f_real")]
+		custom_real: f64,
+		#[serde(default = "default_string")]
+		f_text: String,
+		#[serde(default)]
+		f_integer: i64,
+		f_null: Option<i64>,
+	}
+
+	fn default_string() -> String {
+		"default".into()
+	}
+
+	let mut stmt = con.prepare("SELECT f_real, f_blob, f_null FROM test").unwrap();
+	{
+		let mut res = super::from_rows::<TestDeser>(stmt.query(NO_PARAMS).unwrap());
+		let row = res.next().unwrap().unwrap();
+		assert_eq!(row.f_integer, i64::default());
+		assert_eq!(row.custom_real, src.custom_real);
+		assert_eq!(row.f_text, default_string());
+		assert_eq!(row.f_blob, src.f_blob);
+		assert_eq!(row.f_null, src.f_null);
 	}
 }

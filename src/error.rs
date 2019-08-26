@@ -1,9 +1,6 @@
-extern crate rusqlite;
-extern crate serde;
-
 use std::{error, fmt, result};
 
-use self::serde::{de, ser};
+use serde::{de, ser};
 
 #[derive(Debug)]
 pub enum Error {
@@ -17,6 +14,8 @@ pub enum Error {
 	Deserialization(String),
 	/// Error originating from rusqlite
 	Rusqlite(rusqlite::Error),
+	/// No column name information available
+	ColumnNamesNotAvalable,
 }
 
 pub type Result<T> = result::Result<T, Error>;
@@ -44,6 +43,7 @@ impl fmt::Display for Error {
 			Error::Serialization(s) => write!(f, "Serialization error: {}", s),
 			Error::Deserialization(s) => write!(f, "Deserialization error: {}", s),
 			Error::Rusqlite(s) => write!(f, "Rusqlite error: {}", s),
+			Error::ColumnNamesNotAvalable => write!(f, "Column names are not available"),
 		}
 	}
 }

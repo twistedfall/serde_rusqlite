@@ -9,7 +9,7 @@ See [full documentation](https://docs.rs/serde_rusqlite)
 Add this to your Cargo.toml:
 ```
 [dependencies]
-serde_rusqlite = "0.21"
+serde_rusqlite = "0.22"
 ```
 
 [![Build Status](https://travis-ci.org/twistedfall/serde_rusqlite.svg?branch=master)](https://travis-ci.org/twistedfall/serde_rusqlite)
@@ -62,13 +62,9 @@ Some types employ non-trivial handling, these are described below:
 
 ## Examples
 ```rust
-extern crate rusqlite;
-#[macro_use]
-extern crate serde_derive;
-extern crate serde_rusqlite;
-
-use serde_rusqlite::*;
 use rusqlite::NO_PARAMS;
+use serde_derive::{Deserialize, Serialize};
+use serde_rusqlite::*;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 struct Example {
@@ -81,24 +77,31 @@ fn main() {
    connection.execute("CREATE TABLE example (id INT, name TEXT)", NO_PARAMS).unwrap();
 
    // using structure to generate named bound query arguments
-   let row1 = Example{ id: 1, name: "first name".into() };
+   let row1 = Example { id: 1, name: "first name".into() };
    connection.execute_named("INSERT INTO example (id, name) VALUES (:id, :name)", &to_params_named(&row1).unwrap().to_slice()).unwrap();
 
    // using tuple to generate positional bound query arguments
    let row2 = (2, "second name");
    connection.execute("INSERT INTO example (id, name) VALUES (?, ?)", &to_params(&row2).unwrap().to_slice()).unwrap();
 
-   // deserializing using query() and from_rows()
+   // deserializing using query() and from_rows(), the most efficient way
    let mut statement = connection.prepare("SELECT * FROM example").unwrap();
    let mut res = from_rows::<Example>(statement.query(NO_PARAMS).unwrap());
-   assert_eq!(res.next().unwrap(), row1);
-   assert_eq!(res.next().unwrap(), Example{ id: 2, name: "second name".into() });
+   assert_eq!(res.next().unwrap().unwrap(), row1);
+   assert_eq!(res.next().unwrap().unwrap(), Example { id: 2, name: "second name".into() });
 
-   // deserializing using query_and_then() and from_row()
+   // deserializing using query_and_then() and from_row(), incurs extra overhead in from_row() call
    let mut statement = connection.prepare("SELECT * FROM example").unwrap();
    let mut rows = statement.query_and_then(NO_PARAMS, from_row::<Example>).unwrap();
    assert_eq!(rows.next().unwrap().unwrap(), row1);
-   assert_eq!(rows.next().unwrap().unwrap(), Example{ id: 2, name: "second name".into() });
+   assert_eq!(rows.next().unwrap().unwrap(), Example { id: 2, name: "second name".into() });
+
+   // deserializing using query_and_then() and from_row_with_columns(), better performance than from_row()
+   let mut statement = connection.prepare("SELECT * FROM example").unwrap();
+   let columns = columns_from_statement(&statement);
+   let mut rows = statement.query_and_then(NO_PARAMS, |row| from_row_with_columns::<Example>(row, &columns)).unwrap();
+   assert_eq!(rows.next().unwrap().unwrap(), row1);
+   assert_eq!(rows.next().unwrap().unwrap(), Example { id: 2, name: "second name".into() });
 
    // deserializing using query() and from_rows_ref()
    let mut statement = connection.prepare("SELECT * FROM example").unwrap();
@@ -106,37 +109,10 @@ fn main() {
    {
       // only first record is deserialized here
       let mut res = from_rows_ref::<Example>(&mut rows);
-      assert_eq!(res.next().unwrap(), row1);
+      assert_eq!(res.next().unwrap().unwrap(), row1);
    }
    // the second record is deserialized using the original Rows iterator
-   assert_eq!(from_row::<Example>(&rows.next().unwrap().unwrap()).unwrap(), Example{ id: 2, name: "second name".into() });
-
-   // deserializing using query() and from_rows_with_columns()
-   let mut statement = connection.prepare("SELECT * FROM example").unwrap();
-   let columns = columns_from_statement(&statement);
-   let mut res = from_rows_with_columns::<Example, _>(statement.query(NO_PARAMS).unwrap(), &columns);
-   assert_eq!(res.next().unwrap(), row1);
-   assert_eq!(res.next().unwrap(), Example{ id: 2, name: "second name".into() });
-
-   // deserializing using query_and_then() and from_row_with_columns()
-   let mut statement = connection.prepare("SELECT * FROM example").unwrap();
-   let columns = columns_from_statement(&statement);
-   let mut rows = statement.query_and_then(NO_PARAMS, |row| from_row_with_columns::<Example, _>(row, &columns)).unwrap();
-   assert_eq!(rows.next().unwrap().unwrap(), row1);
-   assert_eq!(rows.next().unwrap().unwrap(), Example{ id: 2, name: "second name".into() });
-
-   // deserializing using query() and from_rows_ref_with_columns()
-   let mut statement = connection.prepare("SELECT * FROM example").unwrap();
-   let columns = columns_from_statement(&statement);
-   let mut rows = statement.query(NO_PARAMS).unwrap();
-   {
-      // only first record is deserialized here
-      let mut res = from_rows_ref_with_columns::<Example, _>(&mut rows, &columns);
-      assert_eq!(res.next().unwrap(), row1);
-   }
-   // the second record is deserialized using the original Rows iterator
-   assert_eq!(from_row_with_columns::<Example, _>(&rows.next().unwrap().unwrap(), &columns).unwrap(), Example{ id: 2, name: "second name".into() });
-
+   assert_eq!(from_row::<Example>(&rows.next().unwrap().unwrap()).unwrap(), Example { id: 2, name: "second name".into() });
 }
 ```
 
