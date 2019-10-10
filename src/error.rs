@@ -15,7 +15,7 @@ pub enum Error {
 	/// Error originating from rusqlite
 	Rusqlite(rusqlite::Error),
 	/// No column name information available
-	ColumnNamesNotAvalable,
+	ColumnNamesNotAvailable,
 }
 
 pub type Result<T> = result::Result<T, Error>;
@@ -39,7 +39,7 @@ impl fmt::Display for Error {
 			Error::Serialization(s) => write!(f, "Serialization error: {}", s),
 			Error::Deserialization(s) => write!(f, "Deserialization error: {}", s),
 			Error::Rusqlite(s) => write!(f, "Rusqlite error: {}", s),
-			Error::ColumnNamesNotAvalable => write!(f, "Column names are not available"),
+			Error::ColumnNamesNotAvailable => write!(f, "Column names are not available"),
 		}
 	}
 }

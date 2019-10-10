@@ -56,7 +56,7 @@ fn deser_row<D: DeserializeOwned>(row: rusqlite::Result<Option<&Row>>, columns: 
 			Err(e) => Some(Err(e.into())),
 		}
 	} else {
-		Some(Err(Error::ColumnNamesNotAvalable))
+		Some(Err(Error::ColumnNamesNotAvailable))
 	}
 }
 
