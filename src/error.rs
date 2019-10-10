@@ -21,18 +21,14 @@ pub enum Error {
 pub type Result<T> = result::Result<T, Error>;
 
 impl Error {
-	fn unsupported(err: impl Into<String>) -> Self {
-		Error::Unsupported(err.into())
-	}
-
 	/// Create the instance of `Unsupported` during serialization `Error`
 	pub fn ser_unsupported(typ: &str) -> Self {
-		Error::unsupported(format!("Serialization is not supported from type: {}", typ))
+		Error::Unsupported(format!("Serialization is not supported from type: {}", typ))
 	}
 
 	/// Create the instance of `Unsupported` during deserialization `Error`
 	pub fn de_unsupported(typ: &str) -> Self {
-		Error::unsupported(format!("Deserialization is not supported into type: {}", typ))
+		Error::Unsupported(format!("Deserialization is not supported into type: {}", typ))
 	}
 }
 
