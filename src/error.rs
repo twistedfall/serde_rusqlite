@@ -1,4 +1,4 @@
-use std::{error, fmt, result};
+use std::{error::Error as StdError, fmt, result};
 
 use serde::{de, ser};
 
@@ -44,7 +44,14 @@ impl fmt::Display for Error {
 	}
 }
 
-impl error::Error for Error {}
+impl StdError for Error {
+	fn source(&self) -> Option<&(dyn StdError + 'static)> {
+		match self {
+			Error::Rusqlite(e) => Some(e),
+			_ => None,
+		}
+	}
+}
 
 impl de::Error for Error {
 	fn custom<T: fmt::Display>(msg: T) -> Self {
