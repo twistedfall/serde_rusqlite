@@ -138,6 +138,11 @@ pub fn from_row<D: serde::de::DeserializeOwned>(row: &rusqlite::Row) -> Result<D
 /// you can use `columns_from_statement()`.
 ///
 /// You should use this function in the closure you supply to `query_map()`.
+///
+/// Note: `columns` is a slice of owned `String`s to be type compatible with what `columns_from_statement()`
+/// returns. Most of the time the result of that function will be used as the argument so it makes little sense
+/// to accept something like `&[impl AsRef<str>]` here. It will only make usage of the API less ergonomic. E.g.
+/// There will be 2 generic type arguments to the `from_row_with_columns()` instead of one.
 pub fn from_row_with_columns<D: serde::de::DeserializeOwned>(row: &rusqlite::Row, columns: &[String]) -> Result<D> {
 	D::deserialize(RowDeserializer::from_row_with_columns(row, &columns))
 }
