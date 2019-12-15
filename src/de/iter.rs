@@ -61,16 +61,12 @@ fn deser_row<D: DeserializeOwned>(row: rusqlite::Result<Option<&Row>>, columns: 
 }
 
 fn columns_from_rows(rows: &rusqlite::Rows) -> Option<Vec<String>> {
-	rows.column_names()
-		.map(|v| v.into_iter().map(|name| name.to_owned()).collect())
-	/* // fixme: uncomment when https://github.com/jgallagher/rusqlite/pull/564 is merged and released
 	rows.column_count()
 		.and_then(|len| {
 			let mut out = Vec::with_capacity(len);
 			for i in 0..len {
-				out.push(rows.column_name(i)?.to_owned())
+				out.push(rows.column_name(i)?.expect("Impossible, we checked the length").to_owned())
 			}
 			Some(out)
 		})
-	*/
 }
