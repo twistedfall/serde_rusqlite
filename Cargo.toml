@@ -15,7 +15,7 @@ repository = "https://github.com/twistedfall/serde_rusqlite"
 travis-ci = { repository = "twistedfall/serde_rusqlite", branch = "master" }
 
 [dependencies]
-rusqlite = "0.21"
+rusqlite = "0.22"
 serde = "1.0"
 
 [dev-dependencies]
