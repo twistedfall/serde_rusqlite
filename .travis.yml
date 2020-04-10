@@ -5,9 +5,9 @@ rust:
   - nightly
 cache: cargo
 
-sudo: true
-dist: xenial
+os: linux
+dist: bionic
 
-matrix:
+jobs:
   allow_failures:
     - rust: nightly
