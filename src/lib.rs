@@ -66,7 +66,7 @@
 //!
 //!    // using tuple to generate positional bound query arguments
 //!    let row2 = (2, "second name");
-//!    connection.execute("INSERT INTO example (id, name) VALUES (?, ?)", &to_params(&row2).unwrap().to_slice()).unwrap();
+//!    connection.execute("INSERT INTO example (id, name) VALUES (?, ?)", to_params(&row2).unwrap().to_slice().as_slice()).unwrap();
 //!
 //!    // deserializing using query() and from_rows(), the most efficient way
 //!    let mut statement = connection.prepare("SELECT * FROM example").unwrap();
