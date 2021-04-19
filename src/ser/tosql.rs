@@ -63,7 +63,7 @@ impl ser::Serializer for ToSqlSerializer {
 	}
 
 	fn serialize_some<T: ?Sized + serde::Serialize>(self, value: &T) -> Result<Self::Ok> {
-		Ok(value.serialize(self)?)
+		value.serialize(self)
 	}
 
 	fn serialize_unit(self) -> Result<Self::Ok> {
@@ -79,7 +79,7 @@ impl ser::Serializer for ToSqlSerializer {
 	}
 
 	fn serialize_newtype_struct<T: ?Sized + serde::Serialize>(self, _name: &'static str, value: &T) -> Result<Self::Ok> {
-		Ok(value.serialize(self)?)
+		value.serialize(self)
 	}
 
 	fn serialize_newtype_variant<T: ?Sized + serde::Serialize>(self, name: &'static str, _variant_index: u32, _variant: &'static str, value: &T) -> Result<Self::Ok> {
