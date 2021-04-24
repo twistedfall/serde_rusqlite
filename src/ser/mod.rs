@@ -14,5 +14,5 @@ mod tosql;
 
 pub use super::{Error, Result};
 pub use self::named::NamedSliceSerializer;
-pub use self::positional::PositionalSliceSerializer;
-pub use self::slice::{PositionalParamSlice, NamedParamSlice};
+pub use self::positional::{PositionalParams, PositionalSliceSerializer};
+pub use self::slice::NamedParamSlice;

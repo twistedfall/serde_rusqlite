@@ -1,8 +1,9 @@
-use crate::{Error, PositionalParamSlice, Result};
+use rusqlite::ToSql;
+use serde::ser;
+
+use crate::{Error, Result};
 
 use super::tosql::ToSqlSerializer;
-
-use serde::ser;
 
 macro_rules! forward_tosql {
 	($fun:ident, $type:ty) => {
@@ -19,19 +20,16 @@ macro_rules! forward_tosql {
 	};
 }
 
-/// Serializer into `PositionalParamSlice`
+pub type PositionalParams = Vec<Box<dyn ToSql>>;
+
+/// Serializer into `PositionalParams`
 ///
 /// You shouldn't use it directly, but via the crate's `to_params()` function. Check the crate documentation for example.
-pub struct PositionalSliceSerializer(pub PositionalParamSlice);
-
-impl Default for PositionalSliceSerializer {
-	fn default() -> Self {
-		Self(PositionalParamSlice::from(Vec::new()))
-	}
-}
+#[derive(Default)]
+pub struct PositionalSliceSerializer(pub PositionalParams);
 
 impl ser::Serializer for PositionalSliceSerializer {
-	type Ok = PositionalParamSlice;
+	type Ok = PositionalParams;
 	type Error = Error;
 	type SerializeSeq = Self;
 	type SerializeTuple = Self;
@@ -108,7 +106,7 @@ impl ser::Serializer for PositionalSliceSerializer {
 }
 
 impl ser::SerializeSeq for PositionalSliceSerializer {
-	type Ok = PositionalParamSlice;
+	type Ok = PositionalParams;
 	type Error = Error;
 
 	fn serialize_element<T: ?Sized + serde::Serialize>(&mut self, value: &T) -> Result<()> {
@@ -122,7 +120,7 @@ impl ser::SerializeSeq for PositionalSliceSerializer {
 }
 
 impl ser::SerializeTuple for PositionalSliceSerializer {
-	type Ok = PositionalParamSlice;
+	type Ok = PositionalParams;
 	type Error = Error;
 
 	fn serialize_element<T: ?Sized + serde::Serialize>(&mut self, value: &T) -> Result<()> {
@@ -136,7 +134,7 @@ impl ser::SerializeTuple for PositionalSliceSerializer {
 }
 
 impl ser::SerializeTupleStruct for PositionalSliceSerializer {
-	type Ok = PositionalParamSlice;
+	type Ok = PositionalParams;
 	type Error = Error;
 
 	fn serialize_field<T: ?Sized + serde::Serialize>(&mut self, value: &T) -> Result<()> {
@@ -150,7 +148,7 @@ impl ser::SerializeTupleStruct for PositionalSliceSerializer {
 }
 
 impl ser::SerializeTupleVariant for PositionalSliceSerializer {
-	type Ok = PositionalParamSlice;
+	type Ok = PositionalParams;
 	type Error = Error;
 
 	fn serialize_field<T: ?Sized + serde::Serialize>(&mut self, value: &T) -> Result<()> {

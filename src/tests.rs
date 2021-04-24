@@ -44,7 +44,7 @@ fn test_values_with_cmp_fn<S, D, F>(db_type: &str, value_ser: &S, value_de: &D, 
 {
 	let con = make_connection_with_spec(&format!("test_column {}", db_type));
 	// serialization
-	con.execute("INSERT INTO test(test_column) VALUES(?)", super::to_params(value_ser).unwrap().to_slice().as_slice()).unwrap();
+	con.execute("INSERT INTO test(test_column) VALUES(?)", super::to_params(value_ser).unwrap()).unwrap();
 	// deserialization
 	let mut stmt = con.prepare("SELECT * FROM test").unwrap();
 	let res = stmt.query_and_then([], super::from_row::<D>).unwrap();
@@ -144,17 +144,17 @@ fn test_map() {
 		src.insert("field_2".into(), 2);
 		src.insert("field_1".into(), 1);
 		src.insert("field_3".into(), 3);
-		con.execute_named("INSERT INTO test VALUES(:field_1, :field_2, :field_3)", &super::to_params_named(&src).unwrap().to_slice()).unwrap();
+		con.execute("INSERT INTO test VALUES(:field_1, :field_2, :field_3)", super::to_params_named(&src).unwrap().to_slice().as_slice()).unwrap();
 		// deserialization with columns
 		let mut stmt = con.prepare("SELECT * FROM test").unwrap();
 		{
 			let columns = super::columns_from_statement(&stmt);
-			let mut res = stmt.query_and_then_named(&[], |row| super::from_row_with_columns::<collections::HashMap<String, i64>>(row, &columns)).unwrap();
+			let mut res = stmt.query_and_then([], |row| super::from_row_with_columns::<collections::HashMap<String, i64>>(row, &columns)).unwrap();
 			assert_eq!(res.next().unwrap().unwrap(), src);
 		}
 		// deserialization without columns
 		{
-			let mut res = stmt.query_and_then_named(&[], super::from_row::<collections::HashMap<String, i64>>).unwrap();
+			let mut res = stmt.query_and_then([], super::from_row::<collections::HashMap<String, i64>>).unwrap();
 			assert_eq!(res.next().unwrap().unwrap(), src);
 		}
 	}
@@ -170,18 +170,18 @@ fn test_map() {
 		src.insert('a', 2);
 		src.insert('b', 1);
 		src.insert('c', 3);
-		con.execute_named("INSERT INTO test VALUES(:a, :b, :c)", &super::to_params_named(&src).unwrap().to_slice()).unwrap();
+		con.execute("INSERT INTO test VALUES(:a, :b, :c)", super::to_params_named(&src).unwrap().to_slice().as_slice()).unwrap();
 		let mut stmt = con.prepare("SELECT * FROM test").unwrap();
 		// deserialization with columns
 		{
 			let columns = super::columns_from_statement(&stmt);
-			let mut res = stmt.query_and_then_named(&[], |row| super::from_row_with_columns::<collections::HashMap<char, i64>>(row, &columns)).unwrap();
+			let mut res = stmt.query_and_then([], |row| super::from_row_with_columns::<collections::HashMap<char, i64>>(row, &columns)).unwrap();
 			assert_eq!(res.next().unwrap().unwrap(), src);
 		}
 		// deserialization with custom columns
 		{
 			let columns = vec!["a".to_owned(), "b".to_owned()];
-			let mut res = stmt.query_and_then_named(&[], |row| super::from_row_with_columns::<collections::HashMap<char, i64>>(row, &columns)).unwrap();
+			let mut res = stmt.query_and_then([], |row| super::from_row_with_columns::<collections::HashMap<char, i64>>(row, &columns)).unwrap();
 			let mut src = src.clone();
 			src.remove(&'c');
 			assert_eq!(res.next().unwrap().unwrap(), src);
@@ -195,7 +195,7 @@ fn test_tuple() {
 	type Test = (i64, f64, String, Vec<u8>, Option<i64>);
 	// serialization
 	let src: Test = (34, 76.4, "the test".into(), vec![10, 20, 30], Some(9));
-	con.execute("INSERT INTO test VALUES(?, ?, ?, ?, ?)", super::to_params(&src).unwrap().to_slice().as_slice()).unwrap();
+	con.execute("INSERT INTO test VALUES(?, ?, ?, ?, ?)", super::to_params(&src).unwrap()).unwrap();
 	let mut stmt = con.prepare("SELECT * FROM test").unwrap();
 	// deserialization with columns
 	{
@@ -244,7 +244,7 @@ fn test_struct() {
 		// serialization
 		let src = Test { f_integer: 10, f_real: 65.3, f_text: "the test".into(), f_blob: vec![0, 1, 2], f_null: None };
 		let src_ref = TestRef { f_integer: src.f_integer, f_real: src.f_real, f_text: &src.f_text, f_blob: &src.f_blob, f_null: src.f_null };
-		con.execute_named("INSERT INTO test VALUES(:f_integer, :f_real, :f_text, :f_blob, :f_null)", &super::to_params_named(&src_ref).unwrap().to_slice()).unwrap();
+		con.execute("INSERT INTO test VALUES(:f_integer, :f_real, :f_text, :f_blob, :f_null)", super::to_params_named(&src_ref).unwrap().to_slice().as_slice()).unwrap();
 		// deserialization with columns
 		let mut stmt = con.prepare("SELECT * FROM test").unwrap();
 		{
@@ -272,8 +272,8 @@ fn test_struct() {
 		}
 		// serialization
 		let src = Test { f_blob: vec![5, 10, 15], f_integer: 10, f_real: -65.3, f_text: "".into(), f_null: Some(43) };
-		con.execute_named("INSERT INTO test VALUES(:f_integer, :f_real, :f_text, :f_blob, :f_null)", &super::to_params_named(&src).unwrap().to_slice()).unwrap();
-		con.execute_named("INSERT INTO test VALUES(:f_integer, :f_real, :f_text, :f_blob, :f_null)", &super::to_params_named(&src).unwrap().to_slice()).unwrap();
+		con.execute("INSERT INTO test VALUES(:f_integer, :f_real, :f_text, :f_blob, :f_null)", super::to_params_named(&src).unwrap().to_slice().as_slice()).unwrap();
+		con.execute("INSERT INTO test VALUES(:f_integer, :f_real, :f_text, :f_blob, :f_null)", super::to_params_named(&src).unwrap().to_slice().as_slice()).unwrap();
 		// deserialization with columns
 		let mut stmt = con.prepare("SELECT * FROM test").unwrap();
 		let mut rows = stmt.query([]).unwrap();
@@ -296,7 +296,7 @@ fn test_struct() {
 		}
 		// serialization
 		let src = Test { f_blob: vec![5, 10, 15], f_integer: 10, f_real: -65.3, f_text: "".into(), f_null: Some(43) };
-		con.execute_named("INSERT INTO test VALUES(:f_integer, :f_real, :f_text, :f_blob, :f_null)", &super::to_params_named(&src).unwrap().to_slice()).unwrap();
+		con.execute("INSERT INTO test VALUES(:f_integer, :f_real, :f_text, :f_blob, :f_null)", super::to_params_named(&src).unwrap().to_slice().as_slice()).unwrap();
 		// deserialization
 		let mut stmt = con.prepare("SELECT * FROM test").unwrap();
 		let mut res = super::from_rows::<Test>(stmt.query([]).unwrap());
@@ -317,7 +317,7 @@ fn test_attrs() {
 		f_text: String,
 	}
 	let src = Test { f_blob: vec![5, 10, 15], f_integer: 10, custom_real: -65.3, f_text: "test".into(), f_null: Some(43) };
-	con.execute_named("INSERT INTO test VALUES(:f_integer, :f_real, :f_text, :f_blob, :f_null)", &super::to_params_named(&src).unwrap().to_slice()).unwrap();
+	con.execute("INSERT INTO test VALUES(:f_integer, :f_real, :f_text, :f_blob, :f_null)", super::to_params_named(&src).unwrap().to_slice().as_slice()).unwrap();
 	#[derive(Deserialize, Debug, PartialEq)]
 	struct TestDeser {
 		f_blob: Vec<u8>,
