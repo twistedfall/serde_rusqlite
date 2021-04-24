@@ -1,13 +1,9 @@
 use std::{
 	collections,
-	f32,
-	f64,
 	fmt::Debug,
 };
 
 use serde_derive::{Deserialize, Serialize};
-
-use matches::matches;
 
 fn make_connection() -> rusqlite::Connection {
 	make_connection_with_spec("
@@ -81,7 +77,7 @@ fn test_uint() {
 	test_value_same("INT CHECK(typeof(test_column) == 'integer')", &7162u16);
 	test_value_same("INT CHECK(typeof(test_column) == 'integer')", &98172983_u32);
 	test_value_same("INT CHECK(typeof(test_column) == 'integer')", &98169812698712987_u64);
-	test_ser_err(&u64::max_value(), |err| matches!(*err, super::Error::ValueTooLarge(..)));
+	test_ser_err(&u64::MAX, |err| matches!(*err, super::Error::ValueTooLarge(..)));
 }
 
 #[test]

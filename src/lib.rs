@@ -169,7 +169,7 @@ pub fn from_rows_ref<'rows, 'stmt, D: serde::de::DeserializeOwned>(rows: &'rows 
 /// To get the slice suitable for supplying to `query()` or `execute()` call `to_slice()` on the `Ok` result and
 /// borrow it.
 pub fn to_params<S: serde::Serialize>(obj: S) -> Result<PositionalParamSlice> {
-	obj.serialize(PositionalSliceSerializer::new())
+	obj.serialize(PositionalSliceSerializer::default())
 }
 
 /// Serializes an instance of `S: serde::Serialize` into structure for named bound query arguments
@@ -177,6 +177,5 @@ pub fn to_params<S: serde::Serialize>(obj: S) -> Result<PositionalParamSlice> {
 /// To get the slice suitable for supplying to `query_named()` or `execute_named()` call `to_slice()` on the `Ok` result
 /// and borrow it.
 pub fn to_params_named<S: serde::Serialize>(obj: S) -> Result<NamedParamSlice> {
-	obj.serialize(NamedSliceSerializer::new())
+	obj.serialize(NamedSliceSerializer::default())
 }
-

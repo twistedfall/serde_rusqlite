@@ -24,9 +24,9 @@ macro_rules! forward_tosql {
 /// You shouldn't use it directly, but via the crate's `to_params()` function. Check the crate documentation for example.
 pub struct PositionalSliceSerializer(pub PositionalParamSlice);
 
-impl PositionalSliceSerializer {
-	pub fn new() -> Self {
-		PositionalSliceSerializer(PositionalParamSlice::from(Vec::new()))
+impl Default for PositionalSliceSerializer {
+	fn default() -> Self {
+		Self(PositionalParamSlice::from(Vec::new()))
 	}
 }
 

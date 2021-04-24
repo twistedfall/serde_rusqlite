@@ -1,3 +1,4 @@
+use rusqlite::types::{ToSql, Value};
 use serde::ser;
 
 use crate::{Error, Result};
@@ -20,7 +21,7 @@ macro_rules! tosql_ser {
 pub struct ToSqlSerializer;
 
 impl ser::Serializer for ToSqlSerializer {
-	type Ok = Box<dyn rusqlite::types::ToSql>;
+	type Ok = Box<dyn ToSql>;
 	type Error = Error;
 	type SerializeSeq = BlobSerializer;
 	type SerializeTuple = ser::Impossible<Self::Ok, Self::Error>;
@@ -59,7 +60,7 @@ impl ser::Serializer for ToSqlSerializer {
 	}
 
 	fn serialize_none(self) -> Result<Self::Ok> {
-		Ok(Box::new(rusqlite::types::Value::Null))
+		Ok(Box::new(Value::Null))
 	}
 
 	fn serialize_some<T: ?Sized + serde::Serialize>(self, value: &T) -> Result<Self::Ok> {

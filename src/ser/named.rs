@@ -9,9 +9,9 @@ use super::tosql::ToSqlSerializer;
 /// You shouldn't use it directly, but via the crate's `to_params_named()` function. Check the crate documentation for example.
 pub struct NamedSliceSerializer(pub NamedParamSlice);
 
-impl NamedSliceSerializer {
-	pub fn new() -> Self {
-		NamedSliceSerializer(NamedParamSlice::from(Vec::new()))
+impl Default for NamedSliceSerializer {
+	fn default() -> Self {
+		Self(NamedParamSlice::from(Vec::new()))
 	}
 }
 
