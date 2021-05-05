@@ -11,9 +11,6 @@ documentation = "https://docs.rs/serde_rusqlite"
 readme = "README.md"
 repository = "https://github.com/twistedfall/serde_rusqlite"
 
-[badges]
-travis-ci = { repository = "twistedfall/serde_rusqlite", branch = "master" }
-
 [dependencies]
 rusqlite = "0.25"
 serde = "1.0"

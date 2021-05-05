@@ -12,7 +12,7 @@ Add this to your Cargo.toml:
 serde_rusqlite = "0.27.0"
 ```
 
-[![Build Status](https://travis-ci.org/twistedfall/serde_rusqlite.svg?branch=master)](https://travis-ci.org/twistedfall/serde_rusqlite)
+[![Build Status](https://github.com/twistedfall/serde_rusqlite/actions/workflows/serde_rusqlite.yml/badge.svg)](https://github.com/twistedfall/serde_rusqlite/actions/workflows/serde_rusqlite.yml)
 
 ## Serde Rusqlite
 

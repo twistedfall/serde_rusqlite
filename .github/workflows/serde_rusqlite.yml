@@ -1,0 +1,33 @@
+name: serde_rusqlite
+on:
+  push:
+    branches:
+      - "*"
+    tags_ignore:
+      - "*"
+  pull_request:
+    branches:
+      - "*"
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        rust:
+          - stable
+          - beta
+          - nightly
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          default: true
+
+      - name: Test project
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
