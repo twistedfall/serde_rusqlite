@@ -1,0 +1,5 @@
+no-dev-version = true
+#disable-push = true
+#disable-publish = true
+pre-release-hook = "tools/pre-release.sh"
+pre-release-commit-message = "v{{version}}"
