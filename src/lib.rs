@@ -125,7 +125,7 @@ pub fn columns_from_statement(stmt: &rusqlite::Statement) -> Vec<String> {
 ///
 /// You should supply this function to `query_map()`.
 pub fn from_row<D: serde::de::DeserializeOwned>(row: &rusqlite::Row) -> Result<D> {
-	let columns = row.column_names();
+	let columns = row.as_ref().column_names();
 	let columns_ref = columns.iter().map(|x| x.to_string()).collect::<Vec<_>>();
 	from_row_with_columns(row, &columns_ref)
 }

@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use rusqlite::{Row, Rows};
 use serde::de::DeserializeOwned;
 
-use crate::{Result, Error};
+use crate::{Error, Result};
 
 /// Iterator to automatically deserialize each row from owned `rusqlite::Rows` into `D: serde::Deserialize`
 pub struct DeserRows<'stmt, D> {
@@ -61,12 +61,12 @@ fn deser_row<D: DeserializeOwned>(row: rusqlite::Result<Option<&Row>>, columns: 
 }
 
 fn columns_from_rows(rows: &rusqlite::Rows) -> Option<Vec<String>> {
-	rows.column_count()
-		.and_then(|len| {
-			let mut out = Vec::with_capacity(len);
-			for i in 0..len {
-				out.push(rows.column_name(i)?.expect("Impossible, we checked the length").to_owned())
-			}
-			Some(out)
-		})
+	rows.as_ref().map(|stmt| {
+		let len = stmt.column_count();
+		let mut out = Vec::with_capacity(len);
+		for i in 0..len {
+			out.push(stmt.column_name(i).expect("Impossible, we checked the length").to_owned())
+		}
+		out
+	})
 }
