@@ -3,7 +3,13 @@ use std::{
 	fmt::Debug,
 };
 
+use rusqlite::{
+	ToSql,
+	types::{ToSqlOutput, Value, ValueRef},
+};
 use serde_derive::{Deserialize, Serialize};
+
+use super::to_params_named_with_fields;
 
 fn make_connection() -> rusqlite::Connection {
 	make_connection_with_spec("
@@ -344,4 +350,32 @@ fn test_attrs() {
 		assert_eq!(row.f_blob, src.f_blob);
 		assert_eq!(row.f_null, src.f_null);
 	}
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct Food {
+	id: i32,
+	name: String,
+	flavor: String,
+	color: String,
+	expiration: String,
+}
+
+#[test]
+fn pluck_named() {
+	let item = Food {
+		id: 15,
+		name: "Snickers bar".to_string(),
+		flavor: "choco and caramel".to_string(),
+		color: "brown".to_string(),
+		expiration: "2021-04-05".to_string(),
+	};
+
+	let plucked = to_params_named_with_fields(&item, &["flavor", "id"]).unwrap();
+	let sqlified = plucked.iter().map(|(n, x)| (n.as_str(), x.to_sql().unwrap())).collect::<Vec<_>>();
+
+	assert_eq!(vec![
+		(":id", ToSqlOutput::Owned(Value::Integer(15))),
+		(":flavor", ToSqlOutput::Borrowed(ValueRef::Text("choco and caramel".as_bytes()))),
+	], sqlified);
 }

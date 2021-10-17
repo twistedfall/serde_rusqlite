@@ -7,15 +7,32 @@ use super::tosql::ToSqlSerializer;
 /// Serializer into `NamedParamSlice`
 ///
 /// You shouldn't use it directly, but via the crate's `to_params_named()` function. Check the crate documentation for example.
-pub struct NamedSliceSerializer(pub NamedParamSlice);
+#[derive(Default)]
+pub struct NamedSliceSerializer<'f> {
+	pub result: NamedParamSlice,
+	entry_key: Option<String>,
+	only_fields: &'f [&'f str],
+}
 
-impl Default for NamedSliceSerializer {
-	fn default() -> Self {
-		Self(NamedParamSlice::from(Vec::new()))
+impl<'f> NamedSliceSerializer<'f> {
+	pub fn with_only_fields(only_fields: &'f [&'f str]) -> Self {
+		Self {
+			result: NamedParamSlice::default(),
+			entry_key: None,
+			only_fields,
+		}
+	}
+
+	#[inline]
+	fn add_entry(&mut self, key: &str, value: impl serde::Serialize) -> Result<()> {
+		if self.only_fields.is_empty() || self.only_fields.contains(&key) {
+			self.result.push((format!(":{}", key), value.serialize(ToSqlSerializer)?));
+		}
+		Ok(())
 	}
 }
 
-impl ser::Serializer for NamedSliceSerializer {
+impl ser::Serializer for NamedSliceSerializer<'_> {
 	type Ok = NamedParamSlice;
 	type Error = Error;
 	type SerializeSeq = ser::Impossible<Self::Ok, Self::Error>;
@@ -44,18 +61,18 @@ impl ser::Serializer for NamedSliceSerializer {
 
 	fn serialize_map(mut self, len: Option<usize>) -> Result<Self::SerializeMap> {
 		if let Some(len) = len {
-			self.0.reserve_exact(len);
+			self.result.reserve_exact(len);
 		}
 		Ok(self)
 	}
 
 	fn serialize_struct(mut self, _name: &'static str, len: usize) -> Result<Self::SerializeStruct> {
-		self.0.reserve_exact(len);
+		self.result.reserve_exact(len);
 		Ok(self)
 	}
 
 	fn serialize_struct_variant(mut self, _name: &'static str, _variant_index: u32, _variant: &'static str, len: usize) -> Result<Self::SerializeStructVariant> {
-		self.0.reserve_exact(len);
+		self.result.reserve_exact(len);
 		Ok(self)
 	}
 
@@ -83,50 +100,50 @@ impl ser::Serializer for NamedSliceSerializer {
 	fn serialize_tuple_variant(self, _name: &'static str, _variant_index: u32, _variant: &'static str, _len: usize) -> Result<Self::SerializeTupleVariant> { Err(Error::ser_unsupported("tuple_variant")) }
 }
 
-impl ser::SerializeMap for NamedSliceSerializer {
+impl ser::SerializeMap for NamedSliceSerializer<'_> {
 	type Ok = NamedParamSlice;
 	type Error = Error;
 
 	fn serialize_key<T: ?Sized + serde::Serialize>(&mut self, key: &T) -> Result<()> {
-		self.0.push((format!(":{}", key.serialize(ColumNameSerializer)?), Box::new(0)));
+		self.entry_key = Some(key.serialize(ColumNameSerializer)?);
 		Ok(())
 	}
 
 	fn serialize_value<T: ?Sized + serde::Serialize>(&mut self, value: &T) -> Result<()> {
-		self.0.last_mut().unwrap().1 = value.serialize(ToSqlSerializer)?;
+		if let Some(column_name) = self.entry_key.take() {
+			self.add_entry(&column_name, value)?;
+		}
 		Ok(())
 	}
 
 	fn end(self) -> Result<Self::Ok> {
-		Ok(self.0)
+		Ok(self.result)
 	}
 }
 
-impl ser::SerializeStruct for NamedSliceSerializer {
+impl ser::SerializeStruct for NamedSliceSerializer<'_> {
 	type Ok = NamedParamSlice;
 	type Error = Error;
 
 	fn serialize_field<T: ?Sized + serde::Serialize>(&mut self, key: &'static str, value: &T) -> Result<()> {
-		self.0.push((format!(":{}", key), value.serialize(ToSqlSerializer)?));
-		Ok(())
+		self.add_entry(key, value)
 	}
 
 	fn end(self) -> Result<Self::Ok> {
-		Ok(self.0)
+		Ok(self.result)
 	}
 }
 
-impl ser::SerializeStructVariant for NamedSliceSerializer {
+impl ser::SerializeStructVariant for NamedSliceSerializer<'_> {
 	type Ok = NamedParamSlice;
 	type Error = Error;
 
 	fn serialize_field<T: ?Sized + serde::Serialize>(&mut self, key: &'static str, value: &T) -> Result<()> {
-		self.0.push((format!(":{}", key), value.serialize(ToSqlSerializer)?));
-		Ok(())
+		self.add_entry(key, value)
 	}
 
 	fn end(self) -> Result<Self::Ok> {
-		Ok(self.0)
+		Ok(self.result)
 	}
 }
 

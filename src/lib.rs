@@ -61,9 +61,12 @@
 //! // using structure to generate named bound query arguments
 //! let row1 = Example { id: 1, name: "first name".into() };
 //! connection.execute("INSERT INTO example (id, name) VALUES (:id, :name)", to_params_named(&row1).unwrap().to_slice().as_slice()).unwrap();
+//! // and limiting the set of fields that are to be serialized
+//! let row2 = Example { id: 10, name: "second name".into() };
+//! connection.execute("INSERT INTO example (id, name) VALUES (2, :name)", to_params_named_with_fields(&row2, &["name"]).unwrap().to_slice().as_slice()).unwrap();
 //!
 //! // using tuple to generate positional bound query arguments
-//! let row2 = (2, "second name");
+//! let row2 = (3, "third name");
 //! connection.execute("INSERT INTO example (id, name) VALUES (?, ?)", to_params(&row2).unwrap()).unwrap();
 //!
 //! // deserializing using query() and from_rows(), the most efficient way
@@ -176,4 +179,13 @@ pub fn to_params<S: serde::Serialize>(obj: S) -> Result<ParamsFromIter<Positiona
 /// and borrow it.
 pub fn to_params_named<S: serde::Serialize>(obj: S) -> Result<NamedParamSlice> {
 	obj.serialize(NamedSliceSerializer::default())
+}
+
+/// Serializes only the specified `fields` of an instance of `S: serde::Serialize` into structure
+/// for named bound query arguments
+///
+/// To get the slice suitable for supplying to `query_named()` or `execute_named()` call `to_slice()` on the `Ok` result
+/// and borrow it.
+pub fn to_params_named_with_fields<S: serde::Serialize>(obj: S, fields: &[&str]) -> Result<NamedParamSlice> {
+	obj.serialize(NamedSliceSerializer::with_only_fields(fields))
 }

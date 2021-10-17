@@ -3,12 +3,11 @@ use std::{
 	ops::{Deref, DerefMut},
 };
 
-use crate::NamedSliceSerializer;
-
 /// Stores named bound query arguments
 ///
 /// This `struct` stores data for passing as argument slice to `*_named()` query functions of rusqlite.
 /// To get the instance call crate's `to_named_params()` function.
+#[derive(Default)]
 pub struct NamedParamSlice(Vec<(String, Box<dyn rusqlite::types::ToSql>)>);
 
 impl NamedParamSlice {
@@ -20,12 +19,6 @@ impl NamedParamSlice {
 impl From<Vec<(String, Box<dyn rusqlite::types::ToSql>)>> for NamedParamSlice {
 	fn from(src: Vec<(String, Box<dyn rusqlite::types::ToSql>)>) -> Self {
 		Self(src)
-	}
-}
-
-impl From<NamedSliceSerializer> for NamedParamSlice {
-	fn from(src: NamedSliceSerializer) -> Self {
-		src.0
 	}
 }
 
