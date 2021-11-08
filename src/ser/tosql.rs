@@ -44,7 +44,7 @@ impl ser::Serializer for ToSqlSerializer {
 	tosql_ser!(serialize_bytes, &[u8]);
 
 	fn serialize_u64(self, v: u64) -> Result<Self::Ok> {
-		if v > i64::max_value() as u64 {
+		if v > i64::MAX as u64 {
 			Err(Error::ValueTooLarge(format!("Value is too large to fit into i64: {}", v)))
 		} else {
 			self.serialize_i64(v as i64)
@@ -56,7 +56,8 @@ impl ser::Serializer for ToSqlSerializer {
 	}
 
 	fn serialize_char(self, v: char) -> Result<Self::Ok> {
-		self.serialize_str(&v.to_string())
+		let mut char_bytes = [0; 4];
+		self.serialize_str(v.encode_utf8(&mut char_bytes))
 	}
 
 	fn serialize_none(self) -> Result<Self::Ok> {

@@ -1,4 +1,4 @@
-no-dev-version = true
+dev-version = false
 #disable-push = true
 #disable-publish = true
 pre-release-hook = "tools/pre-release.sh"
