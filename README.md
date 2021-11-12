@@ -9,7 +9,7 @@ See [full documentation](https://docs.rs/serde_rusqlite)
 Add this to your Cargo.toml:
 ```
 [dependencies]
-serde_rusqlite = "0.28.0"
+serde_rusqlite = "0.29.0"
 ```
 
 [![Build Status](https://github.com/twistedfall/serde_rusqlite/actions/workflows/serde_rusqlite.yml/badge.svg)](https://github.com/twistedfall/serde_rusqlite/actions/workflows/serde_rusqlite.yml)
@@ -77,9 +77,12 @@ connection.execute("CREATE TABLE example (id INT, name TEXT)", []).unwrap();
 // using structure to generate named bound query arguments
 let row1 = Example { id: 1, name: "first name".into() };
 connection.execute("INSERT INTO example (id, name) VALUES (:id, :name)", to_params_named(&row1).unwrap().to_slice().as_slice()).unwrap();
+// and limiting the set of fields that are to be serialized
+let row2 = Example { id: 10, name: "second name".into() };
+connection.execute("INSERT INTO example (id, name) VALUES (2, :name)", to_params_named_with_fields(&row2, &["name"]).unwrap().to_slice().as_slice()).unwrap();
 
 // using tuple to generate positional bound query arguments
-let row2 = (2, "second name");
+let row2 = (3, "third name");
 connection.execute("INSERT INTO example (id, name) VALUES (?, ?)", to_params(&row2).unwrap()).unwrap();
 
 // deserializing using query() and from_rows(), the most efficient way
