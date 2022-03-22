@@ -1,6 +1,6 @@
 [package]
 name = "serde_rusqlite"
-version = "0.30.0"
+version = "0.30.1"
 edition = "2018"
 description = "Serialize/deserialize rusqlite rows"
 keywords = ["serde", "sqlite", "rusqlite", "serialization", "deserialization"]
