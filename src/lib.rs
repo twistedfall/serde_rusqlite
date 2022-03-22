@@ -100,10 +100,12 @@
 //! assert_eq!(from_row::<Example>(&rows.next().unwrap().unwrap()).unwrap(), Example { id: 2, name: "second name".into() });
 //! ```
 
+pub use rusqlite;
+use rusqlite::{params_from_iter, ParamsFromIter};
+
 pub use de::{DeserRows, DeserRowsRef, RowDeserializer};
 pub use error::{Error, Result};
-pub use ser::{NamedParamSlice, NamedSliceSerializer, PositionalSliceSerializer, PositionalParams};
-use rusqlite::{ParamsFromIter, params_from_iter};
+pub use ser::{NamedParamSlice, NamedSliceSerializer, PositionalParams, PositionalSliceSerializer};
 
 pub mod error;
 pub mod de;
