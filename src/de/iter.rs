@@ -35,7 +35,7 @@ pub struct DeserRowsRef<'rows, 'stmt, D> {
 
 impl<'rows, 'stmt, D: DeserializeOwned> DeserRowsRef<'rows, 'stmt, D> {
 	pub fn new(rows: &'rows mut Rows<'stmt>) -> Self {
-		Self { columns: columns_from_rows(&rows), rows, d: PhantomData }
+		Self { columns: columns_from_rows(rows), rows, d: PhantomData }
 	}
 }
 
@@ -51,7 +51,7 @@ impl<D: DeserializeOwned> Iterator for DeserRowsRef<'_, '_, D> {
 fn deser_row<D: DeserializeOwned>(row: rusqlite::Result<Option<&Row>>, columns: &Option<Vec<String>>) -> Option<Result<D>> {
 	if let Some(columns) = columns {
 		match row {
-			Ok(Some(row)) => Some(crate::from_row_with_columns(&row, columns)),
+			Ok(Some(row)) => Some(crate::from_row_with_columns(row, columns)),
 			Ok(None) => None,
 			Err(e) => Some(Err(e.into())),
 		}

@@ -352,17 +352,17 @@ fn test_attrs() {
 	}
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct Food {
-	id: i32,
-	name: String,
-	flavor: String,
-	color: String,
-	expiration: String,
-}
-
 #[test]
 fn pluck_named() {
+	#[derive(Debug, Serialize, Deserialize)]
+	struct Food {
+		id: i32,
+		name: String,
+		flavor: String,
+		color: String,
+		expiration: String,
+	}
+
 	let item = Food {
 		id: 15,
 		name: "Snickers bar".to_string(),

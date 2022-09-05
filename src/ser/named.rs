@@ -43,9 +43,15 @@ impl ser::Serializer for NamedSliceSerializer<'_> {
 	type SerializeStruct = Self;
 	type SerializeStructVariant = Self;
 
+	fn serialize_none(self) -> Result<Self::Ok> { Err(Error::ser_unsupported("None")) }
+
 	fn serialize_some<T: ?Sized + serde::Serialize>(self, value: &T) -> Result<Self::Ok> {
 		value.serialize(self)
 	}
+
+	fn serialize_unit(self) -> Result<Self::Ok> { Err(Error::ser_unsupported("()")) }
+
+	fn serialize_unit_struct(self, _name: &'static str) -> Result<Self::Ok> { Err(Error::ser_unsupported("unit_struct")) }
 
 	fn serialize_unit_variant(self, _name: &'static str, _variant_index: u32, variant: &'static str) -> Result<Self::Ok> {
 		self.serialize_str(variant)
@@ -57,23 +63,6 @@ impl ser::Serializer for NamedSliceSerializer<'_> {
 
 	fn serialize_newtype_variant<T: ?Sized + serde::Serialize>(self, _name: &'static str, _variant_index: u32, _variant: &'static str, value: &T) -> Result<Self::Ok> {
 		value.serialize(self)
-	}
-
-	fn serialize_map(mut self, len: Option<usize>) -> Result<Self::SerializeMap> {
-		if let Some(len) = len {
-			self.result.reserve_exact(len);
-		}
-		Ok(self)
-	}
-
-	fn serialize_struct(mut self, _name: &'static str, len: usize) -> Result<Self::SerializeStruct> {
-		self.result.reserve_exact(len);
-		Ok(self)
-	}
-
-	fn serialize_struct_variant(mut self, _name: &'static str, _variant_index: u32, _variant: &'static str, len: usize) -> Result<Self::SerializeStructVariant> {
-		self.result.reserve_exact(len);
-		Ok(self)
 	}
 
 	ser_unimpl!(serialize_bool, bool);
@@ -91,13 +80,24 @@ impl ser::Serializer for NamedSliceSerializer<'_> {
 	ser_unimpl!(serialize_char, char);
 	ser_unimpl!(serialize_bytes, &[u8]);
 
-	fn serialize_none(self) -> Result<Self::Ok> { Err(Error::ser_unsupported("None")) }
-	fn serialize_unit(self) -> Result<Self::Ok> { Err(Error::ser_unsupported("()")) }
-	fn serialize_unit_struct(self, _name: &'static str) -> Result<Self::Ok> { Err(Error::ser_unsupported("unit_struct")) }
 	fn serialize_seq(self, _len: Option<usize>) -> Result<Self::SerializeSeq> { Err(Error::ser_unsupported("seq")) }
 	fn serialize_tuple(self, _len: usize) -> Result<Self::SerializeTuple> { Err(Error::ser_unsupported("tuple")) }
 	fn serialize_tuple_struct(self, _name: &'static str, _len: usize) -> Result<Self::SerializeTupleStruct> { Err(Error::ser_unsupported("tuple_struct")) }
 	fn serialize_tuple_variant(self, _name: &'static str, _variant_index: u32, _variant: &'static str, _len: usize) -> Result<Self::SerializeTupleVariant> { Err(Error::ser_unsupported("tuple_variant")) }
+	fn serialize_map(mut self, len: Option<usize>) -> Result<Self::SerializeMap> {
+		if let Some(len) = len {
+			self.result.reserve_exact(len);
+		}
+		Ok(self)
+	}
+	fn serialize_struct(mut self, _name: &'static str, len: usize) -> Result<Self::SerializeStruct> {
+		self.result.reserve_exact(len);
+		Ok(self)
+	}
+	fn serialize_struct_variant(mut self, _name: &'static str, _variant_index: u32, _variant: &'static str, len: usize) -> Result<Self::SerializeStructVariant> {
+		self.result.reserve_exact(len);
+		Ok(self)
+	}
 }
 
 impl ser::SerializeMap for NamedSliceSerializer<'_> {

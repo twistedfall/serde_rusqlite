@@ -150,7 +150,7 @@ pub fn from_row<D: serde::de::DeserializeOwned>(row: &rusqlite::Row) -> Result<D
 /// There will be 2 generic type arguments to the `from_row_with_columns()` instead of one.
 #[inline]
 pub fn from_row_with_columns<D: serde::de::DeserializeOwned>(row: &rusqlite::Row, columns: &[String]) -> Result<D> {
-	D::deserialize(RowDeserializer::from_row_with_columns(row, &columns))
+	D::deserialize(RowDeserializer::from_row_with_columns(row, columns))
 }
 
 /// Returns iterator that owns `rusqlite::Rows` and deserializes all records from it into instances of `D: serde::Deserialize`
