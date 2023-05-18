@@ -11,7 +11,7 @@ pub enum Error {
 	/// General error during serialization
 	Serialization(String),
 	/// General error during deserialization
-	Deserialization(String),
+	Deserialization { column: Option<String>, message: String },
 	/// Error originating from rusqlite
 	Rusqlite(rusqlite::Error),
 	/// No column name information available
@@ -37,7 +37,11 @@ impl fmt::Display for Error {
 		match self {
 			Error::Unsupported(s) | Error::ValueTooLarge(s) => write!(f, "{}", s),
 			Error::Serialization(s) => write!(f, "Serialization error: {}", s),
-			Error::Deserialization(s) => write!(f, "Deserialization error: {}", s),
+			Error::Deserialization { column: None, message } => write!(f, "Deserialization error: {}", message),
+			Error::Deserialization {
+				column: Some(field),
+				message,
+			} => write!(f, "Deserialization failed for field: {} error: {}", field, message),
 			Error::Rusqlite(s) => write!(f, "Rusqlite error: {}", s),
 			Error::ColumnNamesNotAvailable => write!(f, "Column names are not available"),
 		}
@@ -55,7 +59,10 @@ impl StdError for Error {
 
 impl de::Error for Error {
 	fn custom<T: fmt::Display>(msg: T) -> Self {
-		Error::Deserialization(msg.to_string())
+		Error::Deserialization {
+			column: None,
+			message: msg.to_string(),
+		}
 	}
 }
 

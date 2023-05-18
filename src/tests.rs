@@ -3,6 +3,8 @@ use std::{collections, fmt::Debug};
 use rusqlite::types::{ToSqlOutput, Value, ValueRef};
 use serde_derive::{Deserialize, Serialize};
 
+use crate::Error;
+
 use super::to_params_named_with_fields;
 
 fn make_connection() -> rusqlite::Connection {
@@ -35,7 +37,7 @@ fn test_values<D: serde::de::DeserializeOwned + PartialEq + Debug>(
 	test_values_with_cmp_fn::<_, _, &dyn Fn(&D, &D) -> bool>(db_type, value_ser, value_de, None)
 }
 
-fn test_ser_err<S: serde::Serialize, F: Fn(&super::Error) -> bool>(value: &S, err_check_fn: F) {
+fn test_ser_err<S: serde::Serialize, F: Fn(&Error) -> bool>(value: &S, err_check_fn: F) {
 	match super::to_params(value) {
 		Err(e) => assert!(err_check_fn(&e), "Error raised was not of the correct type, got: {}", e),
 		_ => panic!("Error was not raised"),
@@ -455,6 +457,42 @@ fn test_attrs() {
 		assert_eq!(row.f_text, default_string());
 		assert_eq!(row.f_blob, src.f_blob);
 		assert_eq!(row.f_null, src.f_null);
+	}
+}
+
+#[test]
+fn test_deser_err() {
+	let con = make_connection();
+	#[derive(Serialize, Debug, PartialEq)]
+	struct Ser {
+		f_real: f64,
+		f_text: String,
+	}
+	let src = Ser {
+		f_real: -65.3,
+		f_text: "test".to_string(),
+	};
+	con.execute(
+		"INSERT INTO test(f_real, f_text) VALUES(:f_real, :f_text)",
+		super::to_params_named(&src).unwrap().to_slice().as_slice(),
+	)
+	.unwrap();
+	#[derive(Deserialize, Debug, PartialEq)]
+	struct Deser {
+		f_real: f64,
+		f_text: i64,
+	}
+
+	let mut stmt = con.prepare("SELECT f_real, f_text FROM test").unwrap();
+	{
+		let mut res = super::from_rows::<Deser>(stmt.query([]).unwrap());
+		let err = res.next().unwrap();
+		match err {
+			Err(Error::Deserialization { column: Some(field), .. }) => {
+				assert_eq!(field, "f_text")
+			}
+			_ => assert!(false, "Unexpected result: {:?}", err),
+		}
 	}
 }
 

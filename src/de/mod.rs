@@ -196,17 +196,21 @@ impl<'de> MapAccess<'de> for RowMapAccess<'de, '_, '_> {
 		if self.idx >= self.de.columns.len() {
 			Ok(None)
 		} else {
+			let column = self.de.columns[self.idx].as_str();
 			seed
-				.deserialize(self.de.columns[self.idx].as_str().into_deserializer())
+				.deserialize(column.into_deserializer())
 				.map(Some)
+				.map_err(|e| add_field_to_error(e, column))
 		}
 	}
 
 	fn next_value_seed<V: DeserializeSeed<'de>>(&mut self, seed: V) -> Result<V::Value> {
-		let out = seed.deserialize(RowValue {
-			idx: self.idx,
-			row: self.de.row,
-		});
+		let out = seed
+			.deserialize(RowValue {
+				idx: self.idx,
+				row: self.de.row,
+			})
+			.map_err(|e| add_field_to_error(e, &self.de.columns[self.idx]));
 		self.idx += 1;
 		out
 	}
@@ -226,7 +230,8 @@ impl<'de> SeqAccess<'de> for RowSeqAccess<'de, '_, '_> {
 				idx: self.idx,
 				row: self.de.row,
 			})
-			.map(Some);
+			.map(Some)
+			.map_err(|e| add_field_to_error(e, &self.de.columns[self.idx]));
 		self.idx += 1;
 		out
 	}
@@ -261,4 +266,11 @@ impl<'de> VariantAccess<'de> for RowVariantAccess {
 	fn struct_variant<V: Visitor<'de>>(self, _fields: &'static [&'static str], _visitor: V) -> Result<V::Value> {
 		Err(Error::de_unsupported("struct_variant"))
 	}
+}
+
+fn add_field_to_error(mut error: Error, error_column: &str) -> Error {
+	if let Error::Deserialization { column, .. } = &mut error {
+		*column = Some(error_column.to_string());
+	}
+	error
 }
