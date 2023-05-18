@@ -39,9 +39,9 @@ impl fmt::Display for Error {
 			Error::Serialization(s) => write!(f, "Serialization error: {}", s),
 			Error::Deserialization { column: None, message } => write!(f, "Deserialization error: {}", message),
 			Error::Deserialization {
-				column: Some(field),
+				column: Some(column),
 				message,
-			} => write!(f, "Deserialization failed for field: {} error: {}", field, message),
+			} => write!(f, "Deserialization failed for column: {} error: {}", column, message),
 			Error::Rusqlite(s) => write!(f, "Rusqlite error: {}", s),
 			Error::ColumnNamesNotAvailable => write!(f, "Column names are not available"),
 		}
