@@ -107,8 +107,8 @@ pub use de::{DeserRows, DeserRowsRef, RowDeserializer};
 pub use error::{Error, Result};
 pub use ser::{NamedParamSlice, NamedSliceSerializer, PositionalParams, PositionalSliceSerializer};
 
-pub mod error;
 pub mod de;
+pub mod error;
 pub mod ser;
 #[cfg(test)]
 mod tests;
@@ -168,7 +168,9 @@ pub fn from_rows<D: serde::de::DeserializeOwned>(rows: rusqlite::Rows) -> DeserR
 /// Use this function instead of `from_rows()` when you still need iterator with the remaining rows after deserializing some
 /// of them.
 #[inline]
-pub fn from_rows_ref<'rows, 'stmt, D: serde::de::DeserializeOwned>(rows: &'rows mut rusqlite::Rows<'stmt>) -> DeserRowsRef<'rows, 'stmt, D> {
+pub fn from_rows_ref<'rows, 'stmt, D: serde::de::DeserializeOwned>(
+	rows: &'rows mut rusqlite::Rows<'stmt>,
+) -> DeserRowsRef<'rows, 'stmt, D> {
 	DeserRowsRef::new(rows)
 }
 

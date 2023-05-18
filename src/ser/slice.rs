@@ -1,7 +1,5 @@
-use std::{
-	borrow::Borrow,
-	ops::{Deref, DerefMut},
-};
+use std::borrow::Borrow;
+use std::ops::{Deref, DerefMut};
 
 /// Stores named bound query arguments
 ///
@@ -35,4 +33,3 @@ impl DerefMut for NamedParamSlice {
 		&mut self.0
 	}
 }
-

@@ -1,24 +1,20 @@
-use std::{
-	collections,
-	fmt::Debug,
-};
+use std::{collections, fmt::Debug};
 
-use rusqlite::{
-	ToSql,
-	types::{ToSqlOutput, Value, ValueRef},
-};
+use rusqlite::types::{ToSqlOutput, Value, ValueRef};
 use serde_derive::{Deserialize, Serialize};
 
 use super::to_params_named_with_fields;
 
 fn make_connection() -> rusqlite::Connection {
-	make_connection_with_spec("
+	make_connection_with_spec(
+		"
 		f_integer INT CHECK(typeof(f_integer) IN ('integer', 'null')),
 		f_real REAL CHECK(typeof(f_real) IN ('real', 'null')),
 		f_text TEXT CHECK(typeof(f_text) IN ('text', 'null')),
 		f_blob BLOB CHECK(typeof(f_blob) IN ('blob', 'null')),
 		f_null INT CHECK(typeof(f_integer) IN ('integer', 'null'))
-	")
+	",
+	)
 }
 
 fn make_connection_with_spec(table_spec: &str) -> rusqlite::Connection {
@@ -31,7 +27,11 @@ fn test_value_same<T: serde::Serialize + serde::de::DeserializeOwned + PartialEq
 	test_values(db_type, &src.clone(), src)
 }
 
-fn test_values<D: serde::de::DeserializeOwned + PartialEq + Debug>(db_type: &str, value_ser: &impl serde::Serialize, value_de: &D) {
+fn test_values<D: serde::de::DeserializeOwned + PartialEq + Debug>(
+	db_type: &str,
+	value_ser: &impl serde::Serialize,
+	value_de: &D,
+) {
 	test_values_with_cmp_fn::<_, _, &dyn Fn(&D, &D) -> bool>(db_type, value_ser, value_de, None)
 }
 
@@ -43,14 +43,18 @@ fn test_ser_err<S: serde::Serialize, F: Fn(&super::Error) -> bool>(value: &S, er
 }
 
 fn test_values_with_cmp_fn<S, D, F>(db_type: &str, value_ser: &S, value_de: &D, comparison_fn: Option<F>)
-	where
-		S: serde::Serialize,
-		D: serde::de::DeserializeOwned + PartialEq + Debug,
-		F: Fn(&D, &D) -> bool
+where
+	S: serde::Serialize,
+	D: serde::de::DeserializeOwned + PartialEq + Debug,
+	F: Fn(&D, &D) -> bool,
 {
 	let con = make_connection_with_spec(&format!("test_column {}", db_type));
 	// serialization
-	con.execute("INSERT INTO test(test_column) VALUES(?)", super::to_params(value_ser).unwrap()).unwrap();
+	con.execute(
+		"INSERT INTO test(test_column) VALUES(?)",
+		super::to_params(value_ser).unwrap(),
+	)
+	.unwrap();
 	// deserialization
 	let mut stmt = con.prepare("SELECT * FROM test").unwrap();
 	let res = stmt.query_and_then([], super::from_row::<D>).unwrap();
@@ -58,7 +62,10 @@ fn test_values_with_cmp_fn<S, D, F>(db_type: &str, value_ser: &S, value_de: &D, 
 		let row = row.unwrap();
 		match comparison_fn {
 			None => assert_eq!(row, *value_de),
-			Some(ref comparison_fn) => assert!(comparison_fn(&row, value_de), "value after deserialization is not the same as before")
+			Some(ref comparison_fn) => assert!(
+				comparison_fn(&row, value_de),
+				"value after deserialization is not the same as before"
+			),
 		}
 	}
 }
@@ -95,8 +102,18 @@ fn test_float() {
 	test_value_same("REAL CHECK(typeof(test_column) == 'real')", &f32::NEG_INFINITY);
 	test_value_same("REAL CHECK(typeof(test_column) == 'real')", &f32::INFINITY);
 	// can't compare 2 NaN's directly, so using custom comparison function
-	test_values_with_cmp_fn("REAL CHECK(typeof(test_column) == 'null')", &f64::NAN, &f64::NAN, Some(|db: &f64, value: &f64| db.is_nan() && value.is_nan()));
-	test_values_with_cmp_fn("REAL CHECK(typeof(test_column) == 'null')", &f32::NAN, &f32::NAN, Some(|db: &f32, value: &f32| db.is_nan() && value.is_nan()));
+	test_values_with_cmp_fn(
+		"REAL CHECK(typeof(test_column) == 'null')",
+		&f64::NAN,
+		&f64::NAN,
+		Some(|db: &f64, value: &f64| db.is_nan() && value.is_nan()),
+	);
+	test_values_with_cmp_fn(
+		"REAL CHECK(typeof(test_column) == 'null')",
+		&f32::NAN,
+		&f32::NAN,
+		Some(|db: &f32, value: &f32| db.is_nan() && value.is_nan()),
+	);
 }
 
 #[test]
@@ -111,8 +128,16 @@ fn test_string() {
 #[test]
 fn test_bytes() {
 	let val = b"123456";
-	test_values("BLOB CHECK(typeof(test_column) == 'blob')", &serde_bytes::Bytes::new(val), &val.to_vec());
-	test_values("BLOB CHECK(typeof(test_column) == 'blob')", &serde_bytes::Bytes::new(val), &serde_bytes::ByteBuf::from(val.to_vec()));
+	test_values(
+		"BLOB CHECK(typeof(test_column) == 'blob')",
+		&serde_bytes::Bytes::new(val),
+		&val.to_vec(),
+	);
+	test_values(
+		"BLOB CHECK(typeof(test_column) == 'blob')",
+		&serde_bytes::Bytes::new(val),
+		&serde_bytes::ByteBuf::from(val.to_vec()),
+	);
 }
 
 #[test]
@@ -140,54 +165,80 @@ fn test_enum() {
 #[test]
 fn test_map() {
 	{
-		let con = make_connection_with_spec("
+		let con = make_connection_with_spec(
+			"
 			field_1 INT CHECK(typeof(field_1) == 'integer'),
 			field_2 INT CHECK(typeof(field_2) == 'integer'),
 			field_3 INT CHECK(typeof(field_3) == 'integer')
-		");
+		",
+		);
 		// serialization
 		let mut src = collections::HashMap::<String, i64>::new();
 		src.insert("field_2".into(), 2);
 		src.insert("field_1".into(), 1);
 		src.insert("field_3".into(), 3);
-		con.execute("INSERT INTO test VALUES(:field_1, :field_2, :field_3)", super::to_params_named(&src).unwrap().to_slice().as_slice()).unwrap();
+		con.execute(
+			"INSERT INTO test VALUES(:field_1, :field_2, :field_3)",
+			super::to_params_named(&src).unwrap().to_slice().as_slice(),
+		)
+		.unwrap();
 		// deserialization with columns
 		let mut stmt = con.prepare("SELECT * FROM test").unwrap();
 		{
 			let columns = super::columns_from_statement(&stmt);
-			let mut res = stmt.query_and_then([], |row| super::from_row_with_columns::<collections::HashMap<String, i64>>(row, &columns)).unwrap();
+			let mut res = stmt
+				.query_and_then([], |row| {
+					super::from_row_with_columns::<collections::HashMap<String, i64>>(row, &columns)
+				})
+				.unwrap();
 			assert_eq!(res.next().unwrap().unwrap(), src);
 		}
 		// deserialization without columns
 		{
-			let mut res = stmt.query_and_then([], super::from_row::<collections::HashMap<String, i64>>).unwrap();
+			let mut res = stmt
+				.query_and_then([], super::from_row::<collections::HashMap<String, i64>>)
+				.unwrap();
 			assert_eq!(res.next().unwrap().unwrap(), src);
 		}
 	}
 
 	{
-		let con = make_connection_with_spec("
+		let con = make_connection_with_spec(
+			"
 			a INT CHECK(typeof(a) == 'integer'),
 			b INT CHECK(typeof(b) == 'integer'),
 			c INT CHECK(typeof(c) == 'integer')
-		");
+		",
+		);
 		// serialization
 		let mut src = collections::HashMap::<char, i64>::new();
 		src.insert('a', 2);
 		src.insert('b', 1);
 		src.insert('c', 3);
-		con.execute("INSERT INTO test VALUES(:a, :b, :c)", super::to_params_named(&src).unwrap().to_slice().as_slice()).unwrap();
+		con.execute(
+			"INSERT INTO test VALUES(:a, :b, :c)",
+			super::to_params_named(&src).unwrap().to_slice().as_slice(),
+		)
+		.unwrap();
 		let mut stmt = con.prepare("SELECT * FROM test").unwrap();
 		// deserialization with columns
 		{
 			let columns = super::columns_from_statement(&stmt);
-			let mut res = stmt.query_and_then([], |row| super::from_row_with_columns::<collections::HashMap<char, i64>>(row, &columns)).unwrap();
+			let mut res = stmt
+				.query_and_then([], |row| {
+					super::from_row_with_columns::<collections::HashMap<char, i64>>(row, &columns)
+				})
+				.unwrap();
 			assert_eq!(res.next().unwrap().unwrap(), src);
 		}
 		// deserialization with custom columns
 		{
 			let columns = vec!["a".to_owned(), "b".to_owned()];
-			let mut res = stmt.query_and_then([], |row| super::from_row_with_columns::<collections::HashMap<char, i64>>(row, &columns)).unwrap();
+			let mut res = stmt
+				.query_and_then([], |row| {
+					super::from_row_with_columns::<collections::HashMap<char, i64>>(row, &columns)
+				})
+				.unwrap();
 			let mut src = src.clone();
 			src.remove(&'c');
 			assert_eq!(res.next().unwrap().unwrap(), src);
@@ -201,12 +252,15 @@ fn test_tuple() {
 	type Test = (i64, f64, String, Vec<u8>, Option<i64>);
 	// serialization
 	let src: Test = (34, 76.4, "the test".into(), vec![10, 20, 30], Some(9));
-	con.execute("INSERT INTO test VALUES(?, ?, ?, ?, ?)", super::to_params(&src).unwrap()).unwrap();
+	con.execute("INSERT INTO test VALUES(?, ?, ?, ?, ?)", super::to_params(&src).unwrap())
+		.unwrap();
 	let mut stmt = con.prepare("SELECT * FROM test").unwrap();
 	// deserialization with columns
 	{
 		let columns = super::columns_from_statement(&stmt);
-		let mut res = stmt.query_and_then([], |row| super::from_row_with_columns::<Test>(row, &columns)).unwrap();
+		let mut res = stmt
+			.query_and_then([], |row| super::from_row_with_columns::<Test>(row, &columns))
+			.unwrap();
 		assert_eq!(res.next().unwrap().unwrap(), src);
 	}
 
@@ -248,14 +302,32 @@ fn test_struct() {
 			f_null: Option<i64>,
 		}
 		// serialization
-		let src = Test { f_integer: 10, f_real: 65.3, f_text: "the test".into(), f_blob: vec![0, 1, 2], f_null: None };
-		let src_ref = TestRef { f_integer: src.f_integer, f_real: src.f_real, f_text: &src.f_text, f_blob: &src.f_blob, f_null: src.f_null };
-		con.execute("INSERT INTO test VALUES(:f_integer, :f_real, :f_text, :f_blob, :f_null)", super::to_params_named(&src_ref).unwrap().to_slice().as_slice()).unwrap();
+		let src = Test {
+			f_integer: 10,
+			f_real: 65.3,
+			f_text: "the test".into(),
+			f_blob: vec![0, 1, 2],
+			f_null: None,
+		};
+		let src_ref = TestRef {
+			f_integer: src.f_integer,
+			f_real: src.f_real,
+			f_text: &src.f_text,
+			f_blob: &src.f_blob,
+			f_null: src.f_null,
+		};
+		con.execute(
+			"INSERT INTO test VALUES(:f_integer, :f_real, :f_text, :f_blob, :f_null)",
+			super::to_params_named(&src_ref).unwrap().to_slice().as_slice(),
+		)
+		.unwrap();
 		// deserialization with columns
 		let mut stmt = con.prepare("SELECT * FROM test").unwrap();
 		{
 			let columns = super::columns_from_statement(&stmt);
-			let mut res = stmt.query_and_then([], |row| super::from_row_with_columns::<Test>(row, &columns)).unwrap();
+			let mut res = stmt
+				.query_and_then([], |row| super::from_row_with_columns::<Test>(row, &columns))
+				.unwrap();
 			assert_eq!(res.next().unwrap().unwrap(), src);
 		}
 		// deserialization without columns
@@ -277,9 +349,23 @@ fn test_struct() {
 			f_real: f64,
 		}
 		// serialization
-		let src = Test { f_blob: vec![5, 10, 15], f_integer: 10, f_real: -65.3, f_text: "".into(), f_null: Some(43) };
-		con.execute("INSERT INTO test VALUES(:f_integer, :f_real, :f_text, :f_blob, :f_null)", super::to_params_named(&src).unwrap().to_slice().as_slice()).unwrap();
-		con.execute("INSERT INTO test VALUES(:f_integer, :f_real, :f_text, :f_blob, :f_null)", super::to_params_named(&src).unwrap().to_slice().as_slice()).unwrap();
+		let src = Test {
+			f_blob: vec![5, 10, 15],
+			f_integer: 10,
+			f_real: -65.3,
+			f_text: "".into(),
+			f_null: Some(43),
+		};
+		con.execute(
+			"INSERT INTO test VALUES(:f_integer, :f_real, :f_text, :f_blob, :f_null)",
+			super::to_params_named(&src).unwrap().to_slice().as_slice(),
+		)
+		.unwrap();
+		con.execute(
+			"INSERT INTO test VALUES(:f_integer, :f_real, :f_text, :f_blob, :f_null)",
+			super::to_params_named(&src).unwrap().to_slice().as_slice(),
+		)
+		.unwrap();
 		// deserialization with columns
 		let mut stmt = con.prepare("SELECT * FROM test").unwrap();
 		let mut rows = stmt.query([]).unwrap();
@@ -301,8 +387,18 @@ fn test_struct() {
 			f_real: f64,
 		}
 		// serialization
-		let src = Test { f_blob: vec![5, 10, 15], f_integer: 10, f_real: -65.3, f_text: "".into(), f_null: Some(43) };
-		con.execute("INSERT INTO test VALUES(:f_integer, :f_real, :f_text, :f_blob, :f_null)", super::to_params_named(&src).unwrap().to_slice().as_slice()).unwrap();
+		let src = Test {
+			f_blob: vec![5, 10, 15],
+			f_integer: 10,
+			f_real: -65.3,
+			f_text: "".into(),
+			f_null: Some(43),
+		};
+		con.execute(
+			"INSERT INTO test VALUES(:f_integer, :f_real, :f_text, :f_blob, :f_null)",
+			super::to_params_named(&src).unwrap().to_slice().as_slice(),
+		)
+		.unwrap();
 		// deserialization
 		let mut stmt = con.prepare("SELECT * FROM test").unwrap();
 		let mut res = super::from_rows::<Test>(stmt.query([]).unwrap());
@@ -322,8 +418,18 @@ fn test_attrs() {
 		f_null: Option<i64>,
 		f_text: String,
 	}
-	let src = Test { f_blob: vec![5, 10, 15], f_integer: 10, custom_real: -65.3, f_text: "test".into(), f_null: Some(43) };
-	con.execute("INSERT INTO test VALUES(:f_integer, :f_real, :f_text, :f_blob, :f_null)", super::to_params_named(&src).unwrap().to_slice().as_slice()).unwrap();
+	let src = Test {
+		f_blob: vec![5, 10, 15],
+		f_integer: 10,
+		custom_real: -65.3,
+		f_text: "test".into(),
+		f_null: Some(43),
+	};
+	con.execute(
+		"INSERT INTO test VALUES(:f_integer, :f_real, :f_text, :f_blob, :f_null)",
+		super::to_params_named(&src).unwrap().to_slice().as_slice(),
+	)
+	.unwrap();
 	#[derive(Deserialize, Debug, PartialEq)]
 	struct TestDeser {
 		f_blob: Vec<u8>,
@@ -372,10 +478,19 @@ fn pluck_named() {
 	};
 
 	let plucked = to_params_named_with_fields(&item, &["flavor", "id"]).unwrap();
-	let sqlified = plucked.iter().map(|(n, x)| (n.as_str(), x.to_sql().unwrap())).collect::<Vec<_>>();
+	let sqlified = plucked
+		.iter()
+		.map(|(n, x)| (n.as_str(), x.to_sql().unwrap()))
+		.collect::<Vec<_>>();
 
-	assert_eq!(vec![
-		(":id", ToSqlOutput::Owned(Value::Integer(15))),
-		(":flavor", ToSqlOutput::Borrowed(ValueRef::Text("choco and caramel".as_bytes()))),
-	], sqlified);
+	assert_eq!(
+		vec![
+			(":id", ToSqlOutput::Owned(Value::Integer(15))),
+			(
+				":flavor",
+				ToSqlOutput::Borrowed(ValueRef::Text("choco and caramel".as_bytes()))
+			),
+		],
+		sqlified
+	);
 }

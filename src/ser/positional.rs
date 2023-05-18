@@ -68,7 +68,9 @@ impl ser::Serializer for PositionalSliceSerializer {
 	}
 
 	fn serialize_unit_variant(mut self, name: &'static str, variant_index: u32, variant: &'static str) -> Result<Self::Ok> {
-		self.result.push(ToSqlSerializer.serialize_unit_variant(name, variant_index, variant)?);
+		self
+			.result
+			.push(ToSqlSerializer.serialize_unit_variant(name, variant_index, variant)?);
 		Ok(self.result)
 	}
 
@@ -76,7 +78,13 @@ impl ser::Serializer for PositionalSliceSerializer {
 		value.serialize(self)
 	}
 
-	fn serialize_newtype_variant<T: ?Sized + serde::Serialize>(self, _name: &'static str, _variant_index: u32, _variant: &'static str, value: &T) -> Result<Self::Ok> {
+	fn serialize_newtype_variant<T: ?Sized + serde::Serialize>(
+		self,
+		_name: &'static str,
+		_variant_index: u32,
+		_variant: &'static str,
+		value: &T,
+	) -> Result<Self::Ok> {
 		value.serialize(self)
 	}
 
@@ -97,14 +105,32 @@ impl ser::Serializer for PositionalSliceSerializer {
 		Ok(self)
 	}
 
-	fn serialize_tuple_variant(mut self, _name: &'static str, _variant_index: u32, _variant: &'static str, len: usize) -> Result<Self::SerializeTupleVariant> {
+	fn serialize_tuple_variant(
+		mut self,
+		_name: &'static str,
+		_variant_index: u32,
+		_variant: &'static str,
+		len: usize,
+	) -> Result<Self::SerializeTupleVariant> {
 		self.result.reserve_exact(len);
 		Ok(self)
 	}
 
-	fn serialize_map(self, _len: Option<usize>) -> Result<Self::SerializeMap> { Err(Error::ser_unsupported("map")) }
-	fn serialize_struct(self, _name: &'static str, _len: usize) -> Result<Self::SerializeStruct> { Err(Error::ser_unsupported("struct")) }
-	fn serialize_struct_variant(self, _name: &'static str, _variant_index: u32, _variant: &'static str, _len: usize) -> Result<Self::SerializeStructVariant> { Err(Error::ser_unsupported("struct_variant")) }
+	fn serialize_map(self, _len: Option<usize>) -> Result<Self::SerializeMap> {
+		Err(Error::ser_unsupported("map"))
+	}
+	fn serialize_struct(self, _name: &'static str, _len: usize) -> Result<Self::SerializeStruct> {
+		Err(Error::ser_unsupported("struct"))
+	}
+	fn serialize_struct_variant(
+		self,
+		_name: &'static str,
+		_variant_index: u32,
+		_variant: &'static str,
+		_len: usize,
+	) -> Result<Self::SerializeStructVariant> {
+		Err(Error::ser_unsupported("struct_variant"))
+	}
 }
 
 impl ser::SerializeSeq for PositionalSliceSerializer {

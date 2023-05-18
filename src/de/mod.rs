@@ -1,14 +1,9 @@
 use std::{f32, f64};
 
-use rusqlite::{
-	Row,
-	types::{FromSql, Value},
-};
-use serde::{
-	de::{DeserializeSeed, EnumAccess, IntoDeserializer, MapAccess, SeqAccess, VariantAccess, Visitor},
-	Deserializer,
-	forward_to_deserialize_any,
-};
+use rusqlite::types::{FromSql, Value};
+use rusqlite::Row;
+use serde::de::{DeserializeSeed, EnumAccess, IntoDeserializer, MapAccess, SeqAccess, VariantAccess, Visitor};
+use serde::{forward_to_deserialize_any, Deserializer};
 
 pub use iter::{DeserRows, DeserRowsRef};
 
@@ -63,11 +58,21 @@ impl<'de> Deserializer<'de> for RowDeserializer<'de, '_, '_> {
 		visitor.visit_map(RowMapAccess { idx: 0, de: self })
 	}
 
-	fn deserialize_struct<V: Visitor<'de>>(self, _name: &'static str, _fields: &'static [&'static str], visitor: V) -> Result<V::Value> {
+	fn deserialize_struct<V: Visitor<'de>>(
+		self,
+		_name: &'static str,
+		_fields: &'static [&'static str],
+		visitor: V,
+	) -> Result<V::Value> {
 		self.deserialize_map(visitor)
 	}
 
-	fn deserialize_enum<V: Visitor<'de>>(self, name: &'static str, variants: &'static [&'static str], visitor: V) -> Result<V::Value> {
+	fn deserialize_enum<V: Visitor<'de>>(
+		self,
+		name: &'static str,
+		variants: &'static [&'static str],
+		visitor: V,
+	) -> Result<V::Value> {
 		self.row_value().deserialize_enum(name, variants, visitor)
 	}
 
@@ -163,7 +168,12 @@ impl<'de> Deserializer<'de> for RowValue<'de, '_> {
 		}
 	}
 
-	fn deserialize_enum<V: Visitor<'de>>(self, _name: &'static str, _variants: &'static [&'static str], visitor: V) -> Result<V::Value> {
+	fn deserialize_enum<V: Visitor<'de>>(
+		self,
+		_name: &'static str,
+		_variants: &'static [&'static str],
+		visitor: V,
+	) -> Result<V::Value> {
 		visitor.visit_enum(RowEnumAccess(self.value()?))
 	}
 
@@ -186,12 +196,17 @@ impl<'de> MapAccess<'de> for RowMapAccess<'de, '_, '_> {
 		if self.idx >= self.de.columns.len() {
 			Ok(None)
 		} else {
-			seed.deserialize(self.de.columns[self.idx].as_str().into_deserializer()).map(Some)
+			seed
+				.deserialize(self.de.columns[self.idx].as_str().into_deserializer())
+				.map(Some)
 		}
 	}
 
 	fn next_value_seed<V: DeserializeSeed<'de>>(&mut self, seed: V) -> Result<V::Value> {
-		let out = seed.deserialize(RowValue { idx: self.idx, row: self.de.row });
+		let out = seed.deserialize(RowValue {
+			idx: self.idx,
+			row: self.de.row,
+		});
 		self.idx += 1;
 		out
 	}
@@ -206,7 +221,12 @@ impl<'de> SeqAccess<'de> for RowSeqAccess<'de, '_, '_> {
 	type Error = Error;
 
 	fn next_element_seed<T: DeserializeSeed<'de>>(&mut self, seed: T) -> Result<Option<T::Value>> {
-		let out = seed.deserialize(RowValue { idx: self.idx, row: self.de.row }).map(Some);
+		let out = seed
+			.deserialize(RowValue {
+				idx: self.idx,
+				row: self.de.row,
+			})
+			.map(Some);
 		self.idx += 1;
 		out
 	}
@@ -232,7 +252,13 @@ impl<'de> VariantAccess<'de> for RowVariantAccess {
 		Ok(())
 	}
 
-	fn newtype_variant_seed<T: DeserializeSeed<'de>>(self, _seed: T) -> Result<T::Value> { Err(Error::de_unsupported("newtype_variant")) }
-	fn tuple_variant<V: Visitor<'de>>(self, _len: usize, _visitor: V) -> Result<V::Value> { Err(Error::de_unsupported("tuple_variant")) }
-	fn struct_variant<V: Visitor<'de>>(self, _fields: &'static [&'static str], _visitor: V) -> Result<V::Value> { Err(Error::de_unsupported("struct_variant")) }
+	fn newtype_variant_seed<T: DeserializeSeed<'de>>(self, _seed: T) -> Result<T::Value> {
+		Err(Error::de_unsupported("newtype_variant"))
+	}
+	fn tuple_variant<V: Visitor<'de>>(self, _len: usize, _visitor: V) -> Result<V::Value> {
+		Err(Error::de_unsupported("tuple_variant"))
+	}
+	fn struct_variant<V: Visitor<'de>>(self, _fields: &'static [&'static str], _visitor: V) -> Result<V::Value> {
+		Err(Error::de_unsupported("struct_variant"))
+	}
 }

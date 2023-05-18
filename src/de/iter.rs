@@ -14,7 +14,11 @@ pub struct DeserRows<'stmt, D> {
 
 impl<'stmt, D: DeserializeOwned> DeserRows<'stmt, D> {
 	pub fn new(rows: Rows<'stmt>) -> Self {
-		Self { columns: columns_from_rows(&rows), rows, d: PhantomData }
+		Self {
+			columns: columns_from_rows(&rows),
+			rows,
+			d: PhantomData,
+		}
 	}
 }
 
@@ -35,7 +39,11 @@ pub struct DeserRowsRef<'rows, 'stmt, D> {
 
 impl<'rows, 'stmt, D: DeserializeOwned> DeserRowsRef<'rows, 'stmt, D> {
 	pub fn new(rows: &'rows mut Rows<'stmt>) -> Self {
-		Self { columns: columns_from_rows(rows), rows, d: PhantomData }
+		Self {
+			columns: columns_from_rows(rows),
+			rows,
+			d: PhantomData,
+		}
 	}
 }
 
