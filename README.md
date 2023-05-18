@@ -9,11 +9,12 @@ See [full documentation](https://docs.rs/serde_rusqlite)
 Add this to your Cargo.toml:
 ```
 [dependencies]
-serde_rusqlite = "0.32.0"
+serde_rusqlite = "0.33.0"
 ```
 
 ![Maintenance](https://img.shields.io/badge/maintenance-passively--maintained-yellowgreen.svg)
 [![Build Status](https://github.com/twistedfall/serde_rusqlite/actions/workflows/serde_rusqlite.yml/badge.svg)](https://github.com/twistedfall/serde_rusqlite/actions/workflows/serde_rusqlite.yml)
+[![Documentation](https://docs.rs/serde_rusqlite/badge.svg)](https://docs.rs/serde_rusqlite)
 
 ## Serde Rusqlite
 
