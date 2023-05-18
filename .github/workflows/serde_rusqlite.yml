@@ -19,15 +19,12 @@ jobs:
           - nightly
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
-          default: true
+      - uses: dtolnay/rust-toolchain@stable
 
-      - name: Test project
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets --all-features --tests -- -D warnings
+
+      - name: Test
+        run: cargo test --workspace --all-targets --all-features
