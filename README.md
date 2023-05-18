@@ -9,7 +9,7 @@ See [full documentation](https://docs.rs/serde_rusqlite)
 Add this to your Cargo.toml:
 ```
 [dependencies]
-serde_rusqlite = "0.33.0"
+serde_rusqlite = "0.33.1"
 ```
 
 ![Maintenance](https://img.shields.io/badge/maintenance-passively--maintained-yellowgreen.svg)
