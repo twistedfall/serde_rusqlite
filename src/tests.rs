@@ -318,7 +318,7 @@ fn test_struct() {
 		};
 		con.execute(
 			"INSERT INTO test VALUES(:f_integer, :f_real, :f_text, :f_blob, :f_null)",
-			super::to_params_named(&src_ref).unwrap().to_slice().as_slice(),
+			super::to_params_named(src_ref).unwrap().to_slice().as_slice(),
 		)
 		.unwrap();
 		// deserialization with columns
@@ -372,7 +372,7 @@ fn test_struct() {
 		// deserialization
 		let mut res = super::from_rows_ref::<Test>(&mut rows);
 		assert_eq!(res.next().unwrap().unwrap(), src);
-		assert_eq!(super::from_row::<Test>(&rows.next().unwrap().unwrap()).unwrap(), src);
+		assert_eq!(super::from_row::<Test>(rows.next().unwrap().unwrap()).unwrap(), src);
 	}
 
 	{
@@ -477,7 +477,7 @@ fn pluck_named() {
 		expiration: "2021-04-05".to_string(),
 	};
 
-	let plucked = to_params_named_with_fields(&item, &["flavor", "id"]).unwrap();
+	let plucked = to_params_named_with_fields(item, &["flavor", "id"]).unwrap();
 	let sqlified = plucked
 		.iter()
 		.map(|(n, x)| (n.as_str(), x.to_sql().unwrap()))
