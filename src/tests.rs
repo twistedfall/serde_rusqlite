@@ -474,7 +474,7 @@ fn test_deser_err() {
 	};
 	con.execute(
 		"INSERT INTO test(f_real, f_text) VALUES(:f_real, :f_text)",
-		super::to_params_named(&src).unwrap().to_slice().as_slice(),
+		super::to_params_named(src).unwrap().to_slice().as_slice(),
 	)
 	.unwrap();
 	#[derive(Deserialize, Debug, PartialEq)]
@@ -491,7 +491,7 @@ fn test_deser_err() {
 			Err(Error::Deserialization { column: Some(field), .. }) => {
 				assert_eq!(field, "f_text")
 			}
-			_ => assert!(false, "Unexpected result: {:?}", err),
+			_ => panic!("Unexpected result: {:?}", err),
 		}
 	}
 }
