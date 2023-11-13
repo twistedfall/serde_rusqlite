@@ -118,4 +118,4 @@ let mut rows = statement.query([]).unwrap();
 assert_eq!(from_row::<Example>(&rows.next().unwrap().unwrap()).unwrap(), Example { id: 2, name: "second name".into() });
 ```
 
-License: LGPL-3.0
+License: MIT OR Apache-2.0
