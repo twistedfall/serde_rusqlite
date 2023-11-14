@@ -6,7 +6,7 @@ description = "Serialize/deserialize rusqlite rows"
 keywords = ["serde", "sqlite", "rusqlite", "serialization", "deserialization"]
 categories = ["database", "encoding"]
 authors = ["Pro <twisted.fall@gmail.com>"]
-license = "LGPL-3.0"
+license = "MIT OR Apache-2.0"
 documentation = "https://docs.rs/serde_rusqlite"
 repository = "https://github.com/twistedfall/serde_rusqlite"
 
