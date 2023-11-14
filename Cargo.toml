@@ -14,7 +14,7 @@ repository = "https://github.com/twistedfall/serde_rusqlite"
 maintenance = { status = "passively-maintained" }
 
 [dependencies]
-rusqlite = "0.29"
+rusqlite = "0.30"
 serde = "1.0"
 
 [dev-dependencies]
