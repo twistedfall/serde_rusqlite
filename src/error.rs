@@ -37,11 +37,11 @@ impl fmt::Display for Error {
 		match self {
 			Error::Unsupported(s) | Error::ValueTooLarge(s) => write!(f, "{}", s),
 			Error::Serialization(s) => write!(f, "Serialization error: {}", s),
-			Error::Deserialization { column: None, message } => write!(f, "Deserialization error: {}", message),
 			Error::Deserialization {
 				column: Some(column),
 				message,
 			} => write!(f, "Deserialization failed for column: {} error: {}", column, message),
+			Error::Deserialization { message, .. } => write!(f, "Deserialization error: {}", message),
 			Error::Rusqlite(s) => write!(f, "Rusqlite error: {}", s),
 			Error::ColumnNamesNotAvailable => write!(f, "Column names are not available"),
 		}
@@ -52,7 +52,11 @@ impl StdError for Error {
 	fn source(&self) -> Option<&(dyn StdError + 'static)> {
 		match self {
 			Error::Rusqlite(e) => Some(e),
-			_ => None,
+			Error::Unsupported(_)
+			| Error::ValueTooLarge(_)
+			| Error::Serialization(_)
+			| Error::Deserialization { .. }
+			| Error::ColumnNamesNotAvailable => None,
 		}
 	}
 }
