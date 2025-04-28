@@ -3,12 +3,12 @@ authors = ["Pro <twisted.fall@gmail.com>"]
 categories = ["database", "encoding"]
 description = "Serialize/deserialize rusqlite rows"
 documentation = "https://docs.rs/serde_rusqlite"
-edition = "2021"
+edition = "2024"
 keywords = ["serde", "sqlite", "rusqlite", "serialization", "deserialization"]
 license = "MIT OR Apache-2.0"
 name = "serde_rusqlite"
 repository = "https://github.com/twistedfall/serde_rusqlite"
-version = "0.38.0"
+version = "0.39.0"
 
 [badges]
 maintenance = {status = "passively-maintained"}
