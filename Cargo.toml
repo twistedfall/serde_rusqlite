@@ -1,20 +1,20 @@
 [package]
-name = "serde_rusqlite"
-version = "0.38.0"
-edition = "2021"
-description = "Serialize/deserialize rusqlite rows"
-keywords = ["serde", "sqlite", "rusqlite", "serialization", "deserialization"]
-categories = ["database", "encoding"]
 authors = ["Pro <twisted.fall@gmail.com>"]
-license = "MIT OR Apache-2.0"
+categories = ["database", "encoding"]
+description = "Serialize/deserialize rusqlite rows"
 documentation = "https://docs.rs/serde_rusqlite"
+edition = "2021"
+keywords = ["serde", "sqlite", "rusqlite", "serialization", "deserialization"]
+license = "MIT OR Apache-2.0"
+name = "serde_rusqlite"
 repository = "https://github.com/twistedfall/serde_rusqlite"
+version = "0.38.0"
 
 [badges]
-maintenance = { status = "passively-maintained" }
+maintenance = {status = "passively-maintained"}
 
 [dependencies]
-rusqlite = "0.34"
+rusqlite = "0.35"
 serde = "1"
 
 [dev-dependencies]
