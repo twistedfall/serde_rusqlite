@@ -239,12 +239,18 @@ fn test_map() {
 #[test]
 fn test_serde_json_value() {
 	{
-		let con = make_connection_with_spec("field_1 TEXT CHECK(typeof(field_1) == 'text')");
+		let con = make_connection_with_spec(
+			"
+			field_1 TEXT CHECK(typeof(field_1) == 'text'),
+			field_2 TEXT CHECK(typeof(field_1) == 'text')
+			",
+		);
 		// serialization
 		let mut src = HashMap::<String, String>::new();
-		src.insert("field_1".to_string(), "test".to_string());
+		src.insert("field_1".to_string(), "test 1".to_string());
+		src.insert("field_2".to_string(), "test 2".to_string());
 		con.execute(
-			"INSERT INTO test VALUES(:field_1)",
+			"INSERT INTO test VALUES(:field_1, :field_2)",
 			to_params_named(&src).unwrap().to_slice().as_slice(),
 		)
 		.unwrap();
@@ -253,14 +259,14 @@ fn test_serde_json_value() {
 		{
 			let res = from_rows::<serde_json::Value>(stmt.query([]).unwrap());
 			let res = res.collect::<Result<Vec<_>, Error>>().unwrap();
-			assert_eq!(&[serde_json::Value::String("test".to_string())], res.as_slice());
+			assert_eq!(&[serde_json::Value::String("test 1".to_string())], res.as_slice());
 		}
 		// select field_1
 		let mut stmt = con.prepare("SELECT field_1 FROM test").unwrap();
 		{
 			let res = from_rows::<serde_json::Value>(stmt.query([]).unwrap());
 			let res = res.collect::<Result<Vec<_>, Error>>().unwrap();
-			assert_eq!(&[serde_json::Value::String("test".to_string())], res.as_slice());
+			assert_eq!(&[serde_json::Value::String("test 1".to_string())], res.as_slice());
 		}
 	}
 }
