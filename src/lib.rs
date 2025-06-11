@@ -1,27 +1,28 @@
 //! # Serde Rusqlite
 //!
-//! This crate provides convenience functions to bridge serde and rusqlite. With their help
-//! you can "deserialize" rusqlite `Row`'s into serde `Deserialize` types and "serialize" types
-//! implementing `Serialize` into bound query arguments (positional or named) that rusqlite expects.
+//! This crate provides convenience functions to bridge serde and `rusqlite`. With their help
+//! you can "deserialize" [rusqlite::Row]'s into [serde::Deserialize] types and "serialize" types
+//! implementing [serde::Serialize] into bound query arguments (positional or named) that `rusqlite`
+//! expects.
 //!
 //! Serialization of named bound arguments is only supported from `struct`s and `map`s because other
 //! serde types lack column name information. Likewise, serialization of positional bound arguments
 //! is only supported from `tuple`s, `sequence`s and primitive non-iterable types. In the latter case
-//! the result will be single-element vector. Each serialized field or element must implement
-//! `rusqlite::types::ToSql`.
+//! the result will be a single-element vector. Each serialized field or element must implement
+//! [rusqlite::types::ToSql].
 //!
-//! For deserialization you can use two families of functions: `from_*()` and `from_*_with_columns()`.
+//! For deserialization, you can use two families of functions: `from_*()` and `from_*_with_columns()`.
 //! The most used one is the former. The latter allows you to specify column names for types that need
-//! them, but don't supply them. This includes different `Map` types like `HashMap`. Specifying columns
-//! for deserialization into e.g. `struct` doesn't have any effect as the field list of the struct itself
-//! will be used in any case.
+//! them but don't supply them. This includes different `Map` types like [std::collections::HashMap].
+//! Specifying columns for deserialization into e.g. `struct` doesn't have any effect as the field list
+//! of the struct itself will be used in any case.
 //!
-//! SQLite only supports 5 types: `NULL` (`None`), `INTEGER` (`i64`), `REAL` (`f64`), `TEXT` (`String`)
-//! and `BLOB` (`Vec<u8>`). Corresponding rust types are inside brackets.
+//! SQLite only supports 5 types: `NULL` ([None]), `INTEGER` ([i64]), `REAL` ([f64]), `TEXT` ([String])
+//! and `BLOB` ([Vec<u8>]). Corresponding rust types are inside brackets.
 //!
 //! Some types employ non-trivial handling, these are described below:
 //!
-//! * Serialization of `u64` will fail if it can't be represented by `i64` due to sqlite limitations.
+//! * Serialization of `u64` will fail if it can't be represented by `i64` due to the SQLite limitations.
 //! * Simple `enum`s will be serialized as strings so:
 //!
 //!   ```
@@ -33,16 +34,16 @@
 //!
 //!   will have two possible `TEXT` options in the database "M" and "F". Deserialization into `enum`
 //!   from `TEXT` is also supported.
-//! * `bool`s are serialized as `INTEGER`s 0 or 1, can be deserialized from `INTEGER` and `REAL` where
+//! * [bool]s are serialized as `INTEGER`s 0 or 1, can be deserialized from `INTEGER` and `REAL` where
 //!   0 and 0.0 are `false`, anything else is `true`.
-//! * `f64` and `f32` values of `NaN` are serialized as `NULL`s. When deserializing such value `Option<f64>`
-//!   will have value of `None` and `f64` will have value of `NaN`. The same applies to `f32`.
-//! * `Bytes`, `ByteBuf` from `serde_bytes` are supported as optimized way of handling `BLOB`s.
+//! * [f64] and [f32] values of `NaN` are serialized as `NULL`s. When deserializing such a value, [Option<f64>]
+//!   will have the value of [None] and [f64] will have the value of `NaN`. The same applies to [f32].
+//! * [serde_bytes::Bytes], [serde_bytes::ByteBuf] are supported as optimized way of handling `BLOB`s.
 //! * `unit` serializes to `NULL`.
-//! * Only `sequence`s of `u8` are serialized and deserialized, `BLOB` database type is used. It's
-//!   more optimal though to use `Bytes` and `ByteBuf` from `serde_bytes` for such fields.
-//! * `unit_struct` serializes to `struct` name as `TEXT`, when deserializing the check is made to ensure
-//!   that `struct` name coincides with the string in the database.
+//! * Only `sequence`s of [u8] are serialized and deserialized, `BLOB` database type is used. It's
+//!   more optimal, though, to use [serde_bytes::Bytes] and [serde_bytes::ByteBuf] for such fields.
+//! * `unit_struct` serializes to `struct` name as `TEXT`. When deserializing, the check is made to ensure
+//!   that the `struct` name coincides with the string in the database.
 //!
 //! # Examples
 //! ```
@@ -92,7 +93,7 @@
 //! let mut statement = connection.prepare("SELECT * FROM example").unwrap();
 //! let mut rows = statement.query([]).unwrap();
 //! {
-//!    // only first record is deserialized here
+//!    // only the first record is deserialized here
 //!    let mut res = from_rows_ref::<Example>(&mut rows);
 //!    assert_eq!(res.next().unwrap().unwrap(), row1);
 //! }
@@ -113,23 +114,24 @@ pub mod ser;
 #[cfg(test)]
 mod tests;
 
-/// Returns column names of the statement the way `from_row_with_columns()` method expects them
+/// Returns column names of the [rusqlite::Statement] the way [from_row_with_columns()] function expects them
 ///
-/// This function is needed because by default `column_names()` returns `Vec<&str>` which
-/// ties it to the lifetime of the `rusqlite::Statement`. This way we won't be able to run for example
-/// `.query_map()` because it mutably borrows `rusqlite::Statement` and by that time it's already borrowed
-/// for columns. So this function owns all column names to detach them from the lifetime of `rusqlite::Statement`.
+/// This function is needed because by default [rusqlite::Statement::column_names()] returns [Vec<&str>] which
+/// ties it to the lifetime of the [rusqlite::Statement]. This way we won't be able to run, for example,
+/// [rusqlite::Statement::query_map()] because it mutably borrows [rusqlite::Statement] too, and by that time
+/// it's already borrowed for columns. So this function owns all column names to detach them from the lifetime
+/// of [rusqlite::Statement].
 #[inline]
 pub fn columns_from_statement(stmt: &rusqlite::Statement) -> Vec<String> {
 	stmt.column_names().into_iter().map(str::to_owned).collect()
 }
 
-/// Deserializes an instance of `D: serde::Deserialize` from `rusqlite::Row`
+/// Deserializes an instance of `D:`[serde::Deserialize] from [rusqlite::Row]
 ///
 /// Calling this function incurs allocation and processing overhead because we need to fetch column names from the row.
-/// So use with care when calling this function in a loop or check `from_row_with_columns()` to avoid that overhead.
+/// So exercise care when calling this function in a loop or check [from_row_with_columns()] to avoid that overhead.
 ///
-/// You should supply this function to `query_map()`.
+/// You should supply this function to `query_and_then()`.
 #[inline]
 pub fn from_row<D: serde::de::DeserializeOwned>(row: &rusqlite::Row) -> Result<D> {
 	let columns = row.as_ref().column_names();
@@ -139,13 +141,13 @@ pub fn from_row<D: serde::de::DeserializeOwned>(row: &rusqlite::Row) -> Result<D
 
 /// Deserializes any instance of `D: serde::Deserialize` from `rusqlite::Row` with specified columns
 ///
-/// Use this function over `from_row()` to avoid allocation and overhead for fetching column names. To get columns names
+/// Use this function over `from_row()` to avoid allocation and overhead for fetching column names. To get column names,
 /// you can use `columns_from_statement()`.
 ///
-/// You should use this function in the closure you supply to `query_map()`.
+/// You should use this function in the closure you supply to `query_and_then()`.
 ///
 /// Note: `columns` is a slice of owned `String`s to be type compatible with what `columns_from_statement()`
-/// returns. Most of the time the result of that function will be used as the argument so it makes little sense
+/// returns. Most of the time the result of that function will be used as the argument, so it makes little sense
 /// to accept something like `&[impl AsRef<str>]` here. It will only make usage of the API less ergonomic. E.g.
 /// There will be 2 generic type arguments to the `from_row_with_columns()` instead of one.
 #[inline]
@@ -153,7 +155,7 @@ pub fn from_row_with_columns<D: serde::de::DeserializeOwned>(row: &rusqlite::Row
 	D::deserialize(RowDeserializer::from_row_with_columns(row, columns))
 }
 
-/// Returns iterator that owns `rusqlite::Rows` and deserializes all records from it into instances of `D: serde::Deserialize`
+/// Returns an iterator that owns `rusqlite::Rows` and deserializes all records from it into instances of `D: serde::Deserialize`
 ///
 /// Also see `from_row()` for some specific info.
 ///
@@ -163,10 +165,10 @@ pub fn from_rows<D: serde::de::DeserializeOwned>(rows: rusqlite::Rows) -> DeserR
 	DeserRows::new(rows)
 }
 
-/// Returns iterator that borrows `rusqlite::Rows` and deserializes records from it into instances of `D: serde::Deserialize`
+/// Returns an iterator that borrows `rusqlite::Rows` and deserializes records from it into instances of `D: serde::Deserialize`
 ///
-/// Use this function instead of `from_rows()` when you still need iterator with the remaining rows after deserializing some
-/// of them.
+/// Use this function instead of `from_rows()` when you still need iterator with the remaining rows after deserializing some of
+/// them.
 #[inline]
 pub fn from_rows_ref<'rows, 'stmt, D: serde::de::DeserializeOwned>(
 	rows: &'rows mut rusqlite::Rows<'stmt>,
