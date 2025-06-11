@@ -237,6 +237,35 @@ fn test_map() {
 }
 
 #[test]
+fn test_serde_json_value() {
+	{
+		let con = make_connection_with_spec("field_1 TEXT CHECK(typeof(field_1) == 'text')");
+		// serialization
+		let mut src = HashMap::<String, String>::new();
+		src.insert("field_1".to_string(), "test".to_string());
+		con.execute(
+			"INSERT INTO test VALUES(:field_1)",
+			to_params_named(&src).unwrap().to_slice().as_slice(),
+		)
+		.unwrap();
+		// select *
+		let mut stmt = con.prepare("SELECT * FROM test").unwrap();
+		{
+			let res = from_rows::<serde_json::Value>(stmt.query([]).unwrap());
+			let res = res.collect::<Result<Vec<_>, Error>>().unwrap();
+			assert_eq!(&[serde_json::Value::String("test".to_string())], res.as_slice());
+		}
+		// select field_1
+		let mut stmt = con.prepare("SELECT field_1 FROM test").unwrap();
+		{
+			let res = from_rows::<serde_json::Value>(stmt.query([]).unwrap());
+			let res = res.collect::<Result<Vec<_>, Error>>().unwrap();
+			assert_eq!(&[serde_json::Value::String("test".to_string())], res.as_slice());
+		}
+	}
+}
+
+#[test]
 fn test_tuple() {
 	let con = make_connection();
 	type Test = (i64, f64, String, Vec<u8>, Option<i64>);
