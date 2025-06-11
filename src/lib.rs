@@ -111,8 +111,6 @@ pub use ser::{NamedParamSlice, NamedSliceSerializer, PositionalParams, Positiona
 pub mod de;
 pub mod error;
 pub mod ser;
-#[cfg(test)]
-mod tests;
 
 /// Returns column names of the [rusqlite::Statement] the way [from_row_with_columns()] function expects them
 ///
