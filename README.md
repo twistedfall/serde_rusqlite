@@ -9,7 +9,7 @@ See [full documentation](https://docs.rs/serde_rusqlite)
 Add this to your Cargo.toml:
 ```
 [dependencies]
-serde_rusqlite = "0.39.0"
+serde_rusqlite = "0.39.1"
 ```
 
 ![Maintenance](https://img.shields.io/badge/maintenance-passively--maintained-yellowgreen.svg)
@@ -18,28 +18,29 @@ serde_rusqlite = "0.39.0"
 
 ## Serde Rusqlite
 
-This crate provides convenience functions to bridge serde and rusqlite. With their help
-you can "deserialize" rusqlite `Row`'s into serde `Deserialize` types and "serialize" types
-implementing `Serialize` into bound query arguments (positional or named) that rusqlite expects.
+This crate provides convenience functions to bridge serde and `rusqlite`. With their help
+you can "deserialize" [rusqlite::Row]'s into [serde::Deserialize] types and "serialize" types
+implementing [serde::Serialize] into bound query arguments (positional or named) that `rusqlite`
+expects.
 
 Serialization of named bound arguments is only supported from `struct`s and `map`s because other
 serde types lack column name information. Likewise, serialization of positional bound arguments
 is only supported from `tuple`s, `sequence`s and primitive non-iterable types. In the latter case
-the result will be single-element vector. Each serialized field or element must implement
-`rusqlite::types::ToSql`.
+the result will be a single-element vector. Each serialized field or element must implement
+[rusqlite::types::ToSql].
 
-For deserialization you can use two families of functions: `from_*()` and `from_*_with_columns()`.
+For deserialization, you can use two families of functions: `from_*()` and `from_*_with_columns()`.
 The most used one is the former. The latter allows you to specify column names for types that need
-them, but don't supply them. This includes different `Map` types like `HashMap`. Specifying columns
-for deserialization into e.g. `struct` doesn't have any effect as the field list of the struct itself
-will be used in any case.
+them but don't supply them. This includes different `Map` types like [std::collections::HashMap].
+Specifying columns for deserialization into e.g. `struct` doesn't have any effect as the field list
+of the struct itself will be used in any case.
 
-SQLite only supports 5 types: `NULL` (`None`), `INTEGER` (`i64`), `REAL` (`f64`), `TEXT` (`String`)
-and `BLOB` (`Vec<u8>`). Corresponding rust types are inside brackets.
+SQLite only supports 5 types: `NULL` ([None]), `INTEGER` ([i64]), `REAL` ([f64]), `TEXT` ([String])
+and `BLOB` ([Vec<u8>]). Corresponding rust types are inside brackets.
 
 Some types employ non-trivial handling, these are described below:
 
-* Serialization of `u64` will fail if it can't be represented by `i64` due to sqlite limitations.
+* Serialization of `u64` will fail if it can't be represented by `i64` due to the SQLite limitations.
 * Simple `enum`s will be serialized as strings so:
 
   ```
@@ -51,16 +52,16 @@ Some types employ non-trivial handling, these are described below:
 
   will have two possible `TEXT` options in the database "M" and "F". Deserialization into `enum`
   from `TEXT` is also supported.
-* `bool`s are serialized as `INTEGER`s 0 or 1, can be deserialized from `INTEGER` and `REAL` where
+* [bool]s are serialized as `INTEGER`s 0 or 1, can be deserialized from `INTEGER` and `REAL` where
   0 and 0.0 are `false`, anything else is `true`.
-* `f64` and `f32` values of `NaN` are serialized as `NULL`s. When deserializing such value `Option<f64>`
-  will have value of `None` and `f64` will have value of `NaN`. The same applies to `f32`.
-* `Bytes`, `ByteBuf` from `serde_bytes` are supported as optimized way of handling `BLOB`s.
+* [f64] and [f32] values of `NaN` are serialized as `NULL`s. When deserializing such a value, [Option<f64>]
+  will have the value of [None] and [f64] will have the value of `NaN`. The same applies to [f32].
+* [serde_bytes::Bytes], [serde_bytes::ByteBuf] are supported as optimized way of handling `BLOB`s.
 * `unit` serializes to `NULL`.
-* Only `sequence`s of `u8` are serialized and deserialized, `BLOB` database type is used. It's
-  more optimal though to use `Bytes` and `ByteBuf` from `serde_bytes` for such fields.
-* `unit_struct` serializes to `struct` name as `TEXT`, when deserializing the check is made to ensure
-  that `struct` name coincides with the string in the database.
+* Only `sequence`s of [u8] are serialized and deserialized, `BLOB` database type is used. It's
+  more optimal, though, to use [serde_bytes::Bytes] and [serde_bytes::ByteBuf] for such fields.
+* `unit_struct` serializes to `struct` name as `TEXT`. When deserializing, the check is made to ensure
+  that the `struct` name coincides with the string in the database.
 
 ## Examples
 ```rust
@@ -110,7 +111,7 @@ assert_eq!(rows.next().unwrap().unwrap(), Example { id: 2, name: "second name".i
 let mut statement = connection.prepare("SELECT * FROM example").unwrap();
 let mut rows = statement.query([]).unwrap();
 {
-   // only first record is deserialized here
+   // only the first record is deserialized here
    let mut res = from_rows_ref::<Example>(&mut rows);
    assert_eq!(res.next().unwrap().unwrap(), row1);
 }
