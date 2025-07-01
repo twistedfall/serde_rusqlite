@@ -24,7 +24,7 @@ fn make_connection() -> rusqlite::Connection {
 
 fn make_connection_with_spec(table_spec: &str) -> rusqlite::Connection {
 	let con = rusqlite::Connection::open_in_memory().unwrap();
-	con.execute(&format!("CREATE TABLE test({})", table_spec), []).unwrap();
+	con.execute(&format!("CREATE TABLE test({table_spec})"), []).unwrap();
 	con
 }
 
@@ -38,7 +38,7 @@ fn test_values<D: DeserializeOwned + PartialEq + Debug>(db_type: &str, value_ser
 
 fn test_ser_err<S: Serialize, F: Fn(&Error) -> bool>(value: &S, err_check_fn: F) {
 	match to_params(value) {
-		Err(e) => assert!(err_check_fn(&e), "Error raised was not of the correct type, got: {}", e),
+		Err(e) => assert!(err_check_fn(&e), "Error raised was not of the correct type, got: {e}"),
 		_ => panic!("Error was not raised"),
 	}
 }
@@ -49,7 +49,7 @@ where
 	D: DeserializeOwned + PartialEq + Debug,
 	F: Fn(&D, &D) -> bool,
 {
-	let con = make_connection_with_spec(&format!("test_column {}", db_type));
+	let con = make_connection_with_spec(&format!("test_column {db_type}"));
 	// serialization
 	con.execute("INSERT INTO test(test_column) VALUES(?)", to_params(value_ser).unwrap())
 		.unwrap();
@@ -514,7 +514,7 @@ fn test_deser_err() {
 			Err(Error::Deserialization { column: Some(field), .. }) => {
 				assert_eq!(field, "f_text")
 			}
-			_ => panic!("Unexpected result: {:?}", err),
+			_ => panic!("Unexpected result: {err:?}"),
 		}
 	}
 }

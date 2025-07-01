@@ -23,26 +23,26 @@ pub type Result<T> = result::Result<T, Error>;
 impl Error {
 	/// Create the instance of `Unsupported` during serialization `Error`
 	pub fn ser_unsupported(typ: &str) -> Self {
-		Error::Unsupported(format!("Serialization is not supported from type: {}", typ))
+		Error::Unsupported(format!("Serialization is not supported from type: {typ}"))
 	}
 
 	/// Create the instance of `Unsupported` during deserialization `Error`
 	pub fn de_unsupported(typ: &str) -> Self {
-		Error::Unsupported(format!("Deserialization is not supported into type: {}", typ))
+		Error::Unsupported(format!("Deserialization is not supported into type: {typ}"))
 	}
 }
 
 impl fmt::Display for Error {
 	fn fmt(&self, f: &mut fmt::Formatter) -> result::Result<(), fmt::Error> {
 		match self {
-			Error::Unsupported(s) | Error::ValueTooLarge(s) => write!(f, "{}", s),
-			Error::Serialization(s) => write!(f, "Serialization error: {}", s),
+			Error::Unsupported(s) | Error::ValueTooLarge(s) => write!(f, "{s}"),
+			Error::Serialization(s) => write!(f, "Serialization error: {s}"),
 			Error::Deserialization {
 				column: Some(column),
 				message,
-			} => write!(f, "Deserialization failed for column: {} error: {}", column, message),
-			Error::Deserialization { message, .. } => write!(f, "Deserialization error: {}", message),
-			Error::Rusqlite(s) => write!(f, "Rusqlite error: {}", s),
+			} => write!(f, "Deserialization failed for column: {column} error: {message}"),
+			Error::Deserialization { message, .. } => write!(f, "Deserialization error: {message}"),
+			Error::Rusqlite(s) => write!(f, "Rusqlite error: {s}"),
 			Error::ColumnNamesNotAvailable => write!(f, "Column names are not available"),
 		}
 	}

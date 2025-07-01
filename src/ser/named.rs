@@ -26,7 +26,7 @@ impl<'f> NamedSliceSerializer<'f> {
 	#[inline]
 	fn add_entry(&mut self, key: &str, value: impl serde::Serialize) -> Result<()> {
 		if self.only_fields.is_empty() || self.only_fields.contains(&key) {
-			self.result.push((format!(":{}", key), value.serialize(ToSqlSerializer)?));
+			self.result.push((format!(":{key}"), value.serialize(ToSqlSerializer)?));
 		}
 		Ok(())
 	}
