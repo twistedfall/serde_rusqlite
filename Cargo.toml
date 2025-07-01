@@ -9,7 +9,7 @@ authors = ["Pro <twisted.fall@gmail.com>"]
 license = "MIT OR Apache-2.0"
 documentation = "https://docs.rs/serde_rusqlite"
 repository = "https://github.com/twistedfall/serde_rusqlite"
-exclude = ["/.github", "/tools", ".gitignore", "README.tpl", "release.toml", "rustfmt.toml"]
+exclude = ["/.github", "/tools", "/Cargo.lock", ".gitignore", "README.tpl", "release.toml", "rustfmt.toml"]
 
 [badges]
 maintenance = { status = "passively-maintained" }
