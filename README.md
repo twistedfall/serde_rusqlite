@@ -1,20 +1,24 @@
 # serde_rusqlite
 
-## Documentation
+[![Build Status](https://github.com/twistedfall/serde_rusqlite/actions/workflows/serde_rusqlite.yml/badge.svg)](https://github.com/twistedfall/serde_rusqlite/actions/workflows/serde_rusqlite.yml)
+[![Documentation](https://docs.rs/serde_rusqlite/badge.svg)](https://docs.rs/serde_rusqlite)
+[![Crates.io](https://img.shields.io/crates/v/serde_rusqlite)](https://crates.io/crates/serde_rusqlite)
+![Maintenance](https://img.shields.io/badge/maintenance-passively--maintained-yellowgreen.svg)
 
-See [full documentation](https://docs.rs/serde_rusqlite)
+[Support the project](https://github.com/sponsors/twistedfall) | [Documentation](https://docs.rs/serde_rusqlite)
+
 
 ## Usage
 
-Add this to your Cargo.toml:
+Run:
+```shell
+cargo add serde_rusqlite
 ```
+Or add to your Cargo.toml:
+```toml
 [dependencies]
 serde_rusqlite = "0.39.2"
 ```
-
-![Maintenance](https://img.shields.io/badge/maintenance-passively--maintained-yellowgreen.svg)
-[![Build Status](https://github.com/twistedfall/serde_rusqlite/actions/workflows/serde_rusqlite.yml/badge.svg)](https://github.com/twistedfall/serde_rusqlite/actions/workflows/serde_rusqlite.yml)
-[![Documentation](https://docs.rs/serde_rusqlite/badge.svg)](https://docs.rs/serde_rusqlite)
 
 ## Serde Rusqlite
 
@@ -119,4 +123,6 @@ let mut rows = statement.query([]).unwrap();
 assert_eq!(from_row::<Example>(&rows.next().unwrap().unwrap()).unwrap(), Example { id: 2, name: "second name".into() });
 ```
 
-License: MIT OR Apache-2.0
+## License
+
+MIT OR Apache-2.0
