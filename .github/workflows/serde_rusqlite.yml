@@ -18,3 +18,23 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo clippy --workspace --all-features --tests -- -D warnings
       - run: cargo test --workspace --all-features
+
+  msrv:
+    runs-on: ubuntu-24.04
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      RUSTC_WRAPPER: "sccache"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mozilla-actions/sccache-action@v0.0.9
+
+      - name: Get MSRV package metadata
+        id: metadata
+        run: cargo metadata --no-deps --format-version 1 | jq -r '"msrv="+(.packages[]|select(.name=="serde_rusqlite").rust_version)' >> $GITHUB_OUTPUT
+
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.metadata.outputs.msrv }}
+          components: clippy
+
+      - run: cargo clippy --workspace --all-features --tests -- -D warnings

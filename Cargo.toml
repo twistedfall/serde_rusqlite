@@ -2,6 +2,7 @@
 name = "serde_rusqlite"
 version = "0.39.3"
 edition = "2021"
+rust-version = "1.56"
 description = "Serialize/deserialize rusqlite rows"
 keywords = ["serde", "sqlite", "rusqlite", "serialization", "deserialization"]
 categories = ["database", "encoding"]
