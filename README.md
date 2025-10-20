@@ -17,7 +17,7 @@ cargo add serde_rusqlite
 Or add to your Cargo.toml:
 ```toml
 [dependencies]
-serde_rusqlite = "0.40.0"
+serde_rusqlite = "0.40.1"
 ```
 
 ## Serde Rusqlite
@@ -69,7 +69,7 @@ Some types employ non-trivial handling, these are described below:
 
 ## Examples
 ```rust
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use serde_rusqlite::*;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
