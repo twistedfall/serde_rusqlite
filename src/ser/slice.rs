@@ -9,6 +9,9 @@ use std::ops::{Deref, DerefMut};
 pub struct NamedParamSlice(Vec<(String, Box<dyn rusqlite::types::ToSql>)>);
 
 impl NamedParamSlice {
+	/// Converts the named bound query arguments to a [Vec] suitable for passing to `rusqlite` `*_named()` query functions
+	///
+	/// Call [Vec::as_slice()] or do a `&*` on the result to get the slice.
 	pub fn to_slice(&self) -> Vec<(&str, &dyn rusqlite::types::ToSql)> {
 		self.0.iter().map(|x| (x.0.as_str(), x.1.borrow())).collect()
 	}

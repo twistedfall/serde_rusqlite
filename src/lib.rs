@@ -131,7 +131,7 @@ pub fn columns_from_statement(stmt: &rusqlite::Statement) -> Vec<String> {
 /// Calling this function incurs allocation and processing overhead because we need to fetch column names from the row.
 /// So exercise care when calling this function in a loop or check [from_row_with_columns()] to avoid that overhead.
 ///
-/// You should supply this function to `query_and_then()`.
+/// You should supply this function to [rusqlite::Statement::query_and_then()].
 #[inline]
 pub fn from_row<D: DeserializeOwned>(row: &rusqlite::Row) -> Result<D> {
 	let columns = row.as_ref().column_names();
@@ -139,60 +139,60 @@ pub fn from_row<D: DeserializeOwned>(row: &rusqlite::Row) -> Result<D> {
 	from_row_with_columns(row, &columns_ref)
 }
 
-/// Deserializes any instance of `D: serde::Deserialize` from `rusqlite::Row` with specified columns
+/// Deserializes any instance of `D:`[serde::Deserialize] from [rusqlite::Row] with specified columns
 ///
-/// Use this function over `from_row()` to avoid allocation and overhead for fetching column names. To get column names,
-/// you can use `columns_from_statement()`.
+/// Use this function over [from_row()] to avoid allocation and overhead for fetching column names. To get column names,
+/// you can use [columns_from_statement()].
 ///
-/// You should use this function in the closure you supply to `query_and_then()`.
+/// You should use this function in the closure you supply to [rusqlite::Statement::query_and_then()].
 ///
-/// Note: `columns` is a slice of owned `String`s to be type compatible with what `columns_from_statement()`
+/// ## Note
+/// `columns` argument is a slice of owned [String]s to be type compatible with what [columns_from_statement()]
 /// returns. Most of the time the result of that function will be used as the argument, so it makes little sense
 /// to accept something like `&[impl AsRef<str>]` here. It will only make usage of the API less ergonomic. E.g.
-/// There will be 2 generic type arguments to the `from_row_with_columns()` instead of one.
+/// there will be 2 generic type arguments to the [from_row_with_columns()] instead of one.
 #[inline]
 pub fn from_row_with_columns<D: DeserializeOwned>(row: &rusqlite::Row, columns: &[String]) -> Result<D> {
 	D::deserialize(RowDeserializer::from_row_with_columns(row, columns))
 }
 
-/// Returns an iterator that owns `rusqlite::Rows` and deserializes all records from it into instances of `D: serde::Deserialize`
+/// Returns an iterator that owns [rusqlite::Rows] and deserializes all records from it into instances of `D:`[serde::Deserialize]
 ///
-/// Also see `from_row()` for some specific info.
+/// Also see [from_row()] for some specific info.
 ///
-/// This function covers most of the use cases and is easier to use than the alternative `from_rows_ref()`.
+/// This function covers most of the use cases and is easier to use than the alternative [from_rows_ref()].
 #[inline]
 pub fn from_rows<D: DeserializeOwned>(rows: rusqlite::Rows) -> DeserRows<D> {
 	DeserRows::new(rows)
 }
 
-/// Returns an iterator that borrows `rusqlite::Rows` and deserializes records from it into instances of `D: serde::Deserialize`
+/// Returns an iterator that borrows [rusqlite::Rows] and deserializes records from it into instances of `D:`[serde::Deserialize]
 ///
-/// Use this function instead of `from_rows()` when you still need iterator with the remaining rows after deserializing some of
+/// Use this function instead of [from_rows()] when you still need iterator with the remaining rows after deserializing some of
 /// them.
 #[inline]
 pub fn from_rows_ref<'rows, 'stmt, D: DeserializeOwned>(rows: &'rows mut rusqlite::Rows<'stmt>) -> DeserRowsRef<'rows, 'stmt, D> {
 	DeserRowsRef::new(rows)
 }
 
-/// Serializes an instance of `S: serde::Serialize` into structure for positional bound query arguments
+/// Serializes an instance of `S:`[serde::Serialize] into structure for positional bound query arguments
 ///
-/// To get the slice suitable for supplying to `query()` or `execute()` call `to_slice()` on the `Ok` result and
-/// borrow it.
+/// The [Ok] result is suitable for supplying to [rusqlite::Statement::query()] or [rusqlite::Statement::execute()] directly.
 #[inline]
 pub fn to_params<S: Serialize>(obj: S) -> Result<ParamsFromIter<PositionalParams>> {
 	obj.serialize(PositionalSliceSerializer::default()).map(params_from_iter)
 }
 
-/// Serializes an instance of `S: serde::Serialize` into structure for named bound query arguments
+/// Serializes an instance of `S:`[serde::Serialize] into structure for named bound query arguments
 ///
-/// To get the slice suitable for supplying to `query_named()` or `execute_named()` call `to_slice()` on the `Ok` result
-/// and borrow it.
+/// To get the slice suitable for supplying to [rusqlite::Statement::query()] or [rusqlite::Statement::execute()] call
+/// [NamedParamSlice::to_slice()] on the [Ok] result and convert it to slice with [Vec::as_slice()].
 #[inline]
 pub fn to_params_named<S: Serialize>(obj: S) -> Result<NamedParamSlice> {
 	obj.serialize(NamedSliceSerializer::default())
 }
 
-/// Serializes only the specified `fields` of an instance of `S: serde::Serialize` into structure
+/// Serializes only the specified `fields` of an instance of `S:`[serde::Serialize] into structure
 /// for named bound query arguments
 ///
 /// To get the slice suitable for supplying to `query_named()` or `execute_named()` call `to_slice()` on the `Ok` result
