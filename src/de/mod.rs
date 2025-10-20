@@ -2,8 +2,8 @@ use std::{f32, f64};
 
 use rusqlite::types::{FromSql, Value};
 use rusqlite::Row;
-use serde::de::{DeserializeSeed, EnumAccess, IntoDeserializer, MapAccess, SeqAccess, VariantAccess, Visitor};
-use serde::{forward_to_deserialize_any, Deserializer};
+use serde_core::de::{DeserializeSeed, EnumAccess, IntoDeserializer, MapAccess, SeqAccess, VariantAccess, Visitor};
+use serde_core::{forward_to_deserialize_any, Deserializer};
 
 pub use iter::{DeserRows, DeserRowsRef};
 

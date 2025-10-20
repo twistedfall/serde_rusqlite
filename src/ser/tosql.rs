@@ -1,5 +1,6 @@
 use rusqlite::types::{ToSql, Value};
-use serde::ser;
+use serde_core::ser::Impossible;
+use serde_core::{Serialize, Serializer};
 
 use crate::{Error, Result};
 
@@ -20,16 +21,16 @@ macro_rules! tosql_ser {
 
 pub struct ToSqlSerializer;
 
-impl ser::Serializer for ToSqlSerializer {
+impl Serializer for ToSqlSerializer {
 	type Ok = Box<dyn ToSql>;
 	type Error = Error;
 	type SerializeSeq = BlobSerializer;
-	type SerializeTuple = ser::Impossible<Self::Ok, Self::Error>;
-	type SerializeTupleStruct = ser::Impossible<Self::Ok, Self::Error>;
-	type SerializeTupleVariant = ser::Impossible<Self::Ok, Self::Error>;
-	type SerializeMap = ser::Impossible<Self::Ok, Self::Error>;
-	type SerializeStruct = ser::Impossible<Self::Ok, Self::Error>;
-	type SerializeStructVariant = ser::Impossible<Self::Ok, Self::Error>;
+	type SerializeTuple = Impossible<Self::Ok, Self::Error>;
+	type SerializeTupleStruct = Impossible<Self::Ok, Self::Error>;
+	type SerializeTupleVariant = Impossible<Self::Ok, Self::Error>;
+	type SerializeMap = Impossible<Self::Ok, Self::Error>;
+	type SerializeStruct = Impossible<Self::Ok, Self::Error>;
+	type SerializeStructVariant = Impossible<Self::Ok, Self::Error>;
 
 	tosql_ser!(serialize_bool, bool);
 	tosql_ser!(serialize_i8, i8);
@@ -64,7 +65,7 @@ impl ser::Serializer for ToSqlSerializer {
 		Ok(Box::new(Value::Null))
 	}
 
-	fn serialize_some<T: ?Sized + serde::Serialize>(self, value: &T) -> Result<Self::Ok> {
+	fn serialize_some<T: ?Sized + Serialize>(self, value: &T) -> Result<Self::Ok> {
 		value.serialize(self)
 	}
 
@@ -80,11 +81,11 @@ impl ser::Serializer for ToSqlSerializer {
 		self.serialize_str(variant)
 	}
 
-	fn serialize_newtype_struct<T: ?Sized + serde::Serialize>(self, _name: &'static str, value: &T) -> Result<Self::Ok> {
+	fn serialize_newtype_struct<T: ?Sized + Serialize>(self, _name: &'static str, value: &T) -> Result<Self::Ok> {
 		value.serialize(self)
 	}
 
-	fn serialize_newtype_variant<T: ?Sized + serde::Serialize>(
+	fn serialize_newtype_variant<T: ?Sized + Serialize>(
 		self,
 		name: &'static str,
 		_variant_index: u32,

@@ -3,8 +3,7 @@ use std::fmt::Debug;
 
 use rusqlite::types::{ToSqlOutput, Value, ValueRef};
 use serde::de::DeserializeOwned;
-use serde::Serialize;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use serde_rusqlite::{
 	columns_from_statement, from_row, from_row_with_columns, from_rows, from_rows_ref, to_params, to_params_named,
 	to_params_named_with_fields, Error,
@@ -177,7 +176,7 @@ fn test_map() {
 		src.insert("field_3".into(), 3);
 		con.execute(
 			"INSERT INTO test VALUES(:field_1, :field_2, :field_3)",
-			to_params_named(&src).unwrap().to_slice().as_slice(),
+			&*to_params_named(&src).unwrap().to_slice(),
 		)
 		.unwrap();
 		// deserialization with columns
@@ -383,7 +382,7 @@ fn test_struct() {
 		};
 		con.execute(
 			"INSERT INTO test VALUES(:f_integer, :f_real, :f_text, :f_blob, :f_null)",
-			to_params_named(&src).unwrap().to_slice().as_slice(),
+			&*to_params_named(&src).unwrap().to_slice(),
 		)
 		.unwrap();
 		con.execute(

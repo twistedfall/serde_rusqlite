@@ -1,4 +1,5 @@
-use serde::ser;
+use serde_core::ser::{Impossible, SerializeSeq};
+use serde_core::{Serialize, Serializer};
 
 use crate::{Error, Result};
 
@@ -6,11 +7,11 @@ pub struct BlobSerializer {
 	pub buf: Vec<u8>,
 }
 
-impl ser::SerializeSeq for BlobSerializer {
+impl SerializeSeq for BlobSerializer {
 	type Ok = Box<dyn rusqlite::types::ToSql>;
 	type Error = Error;
 
-	fn serialize_element<T: ?Sized + serde::Serialize>(&mut self, value: &T) -> Result<()> {
+	fn serialize_element<T: ?Sized + Serialize>(&mut self, value: &T) -> Result<()> {
 		self.buf.push(value.serialize(U8Serializer)?);
 		Ok(())
 	}
@@ -22,16 +23,16 @@ impl ser::SerializeSeq for BlobSerializer {
 
 pub struct U8Serializer;
 
-impl ser::Serializer for U8Serializer {
+impl Serializer for U8Serializer {
 	type Ok = u8;
 	type Error = Error;
-	type SerializeSeq = ser::Impossible<Self::Ok, Self::Error>;
-	type SerializeTuple = ser::Impossible<Self::Ok, Self::Error>;
-	type SerializeTupleStruct = ser::Impossible<Self::Ok, Self::Error>;
-	type SerializeTupleVariant = ser::Impossible<Self::Ok, Self::Error>;
-	type SerializeMap = ser::Impossible<Self::Ok, Self::Error>;
-	type SerializeStruct = ser::Impossible<Self::Ok, Self::Error>;
-	type SerializeStructVariant = ser::Impossible<Self::Ok, Self::Error>;
+	type SerializeSeq = Impossible<Self::Ok, Self::Error>;
+	type SerializeTuple = Impossible<Self::Ok, Self::Error>;
+	type SerializeTupleStruct = Impossible<Self::Ok, Self::Error>;
+	type SerializeTupleVariant = Impossible<Self::Ok, Self::Error>;
+	type SerializeMap = Impossible<Self::Ok, Self::Error>;
+	type SerializeStruct = Impossible<Self::Ok, Self::Error>;
+	type SerializeStructVariant = Impossible<Self::Ok, Self::Error>;
 
 	fn serialize_u8(self, v: u8) -> Result<Self::Ok> {
 		Ok(v)
@@ -54,7 +55,7 @@ impl ser::Serializer for U8Serializer {
 	fn serialize_none(self) -> Result<Self::Ok> {
 		Err(Error::ser_unsupported("None"))
 	}
-	fn serialize_some<T: ?Sized + serde::Serialize>(self, _value: &T) -> Result<Self::Ok> {
+	fn serialize_some<T: ?Sized + Serialize>(self, _value: &T) -> Result<Self::Ok> {
 		Err(Error::ser_unsupported("Some"))
 	}
 	fn serialize_unit(self) -> Result<Self::Ok> {
@@ -66,10 +67,10 @@ impl ser::Serializer for U8Serializer {
 	fn serialize_unit_variant(self, _name: &'static str, _variant_index: u32, _variant: &'static str) -> Result<Self::Ok> {
 		self.serialize_unit()
 	}
-	fn serialize_newtype_struct<T: ?Sized + serde::Serialize>(self, _name: &'static str, _value: &T) -> Result<Self::Ok> {
+	fn serialize_newtype_struct<T: ?Sized + Serialize>(self, _name: &'static str, _value: &T) -> Result<Self::Ok> {
 		Err(Error::ser_unsupported("newtype_struct"))
 	}
-	fn serialize_newtype_variant<T: ?Sized + serde::Serialize>(
+	fn serialize_newtype_variant<T: ?Sized + Serialize>(
 		self,
 		_name: &'static str,
 		_variant_index: u32,

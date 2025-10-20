@@ -1,4 +1,5 @@
-use serde::ser;
+use serde_core::ser::{Impossible, SerializeMap, SerializeStruct, SerializeStructVariant, Serializer};
+use serde_core::Serialize;
 
 use crate::{Error, NamedParamSlice, Result};
 
@@ -24,7 +25,7 @@ impl<'f> NamedSliceSerializer<'f> {
 	}
 
 	#[inline]
-	fn add_entry(&mut self, key: &str, value: impl serde::Serialize) -> Result<()> {
+	fn add_entry(&mut self, key: &str, value: impl Serialize) -> Result<()> {
 		if self.only_fields.is_empty() || self.only_fields.contains(&key) {
 			self.result.push((format!(":{key}"), value.serialize(ToSqlSerializer)?));
 		}
@@ -32,13 +33,13 @@ impl<'f> NamedSliceSerializer<'f> {
 	}
 }
 
-impl ser::Serializer for NamedSliceSerializer<'_> {
+impl Serializer for NamedSliceSerializer<'_> {
 	type Ok = NamedParamSlice;
 	type Error = Error;
-	type SerializeSeq = ser::Impossible<Self::Ok, Self::Error>;
-	type SerializeTuple = ser::Impossible<Self::Ok, Self::Error>;
-	type SerializeTupleStruct = ser::Impossible<Self::Ok, Self::Error>;
-	type SerializeTupleVariant = ser::Impossible<Self::Ok, Self::Error>;
+	type SerializeSeq = Impossible<Self::Ok, Self::Error>;
+	type SerializeTuple = Impossible<Self::Ok, Self::Error>;
+	type SerializeTupleStruct = Impossible<Self::Ok, Self::Error>;
+	type SerializeTupleVariant = Impossible<Self::Ok, Self::Error>;
 	type SerializeMap = Self;
 	type SerializeStruct = Self;
 	type SerializeStructVariant = Self;
@@ -47,7 +48,7 @@ impl ser::Serializer for NamedSliceSerializer<'_> {
 		Err(Error::ser_unsupported("None"))
 	}
 
-	fn serialize_some<T: ?Sized + serde::Serialize>(self, value: &T) -> Result<Self::Ok> {
+	fn serialize_some<T: ?Sized + Serialize>(self, value: &T) -> Result<Self::Ok> {
 		value.serialize(self)
 	}
 
@@ -63,11 +64,11 @@ impl ser::Serializer for NamedSliceSerializer<'_> {
 		self.serialize_str(variant)
 	}
 
-	fn serialize_newtype_struct<T: ?Sized + serde::Serialize>(self, _name: &'static str, value: &T) -> Result<Self::Ok> {
+	fn serialize_newtype_struct<T: ?Sized + Serialize>(self, _name: &'static str, value: &T) -> Result<Self::Ok> {
 		value.serialize(self)
 	}
 
-	fn serialize_newtype_variant<T: ?Sized + serde::Serialize>(
+	fn serialize_newtype_variant<T: ?Sized + Serialize>(
 		self,
 		_name: &'static str,
 		_variant_index: u32,
@@ -132,16 +133,16 @@ impl ser::Serializer for NamedSliceSerializer<'_> {
 	}
 }
 
-impl ser::SerializeMap for NamedSliceSerializer<'_> {
+impl SerializeMap for NamedSliceSerializer<'_> {
 	type Ok = NamedParamSlice;
 	type Error = Error;
 
-	fn serialize_key<T: ?Sized + serde::Serialize>(&mut self, key: &T) -> Result<()> {
+	fn serialize_key<T: ?Sized + Serialize>(&mut self, key: &T) -> Result<()> {
 		self.entry_key = Some(key.serialize(ColumNameSerializer)?);
 		Ok(())
 	}
 
-	fn serialize_value<T: ?Sized + serde::Serialize>(&mut self, value: &T) -> Result<()> {
+	fn serialize_value<T: ?Sized + Serialize>(&mut self, value: &T) -> Result<()> {
 		if let Some(column_name) = self.entry_key.take() {
 			self.add_entry(&column_name, value)?;
 		}
@@ -153,11 +154,11 @@ impl ser::SerializeMap for NamedSliceSerializer<'_> {
 	}
 }
 
-impl ser::SerializeStruct for NamedSliceSerializer<'_> {
+impl SerializeStruct for NamedSliceSerializer<'_> {
 	type Ok = NamedParamSlice;
 	type Error = Error;
 
-	fn serialize_field<T: ?Sized + serde::Serialize>(&mut self, key: &'static str, value: &T) -> Result<()> {
+	fn serialize_field<T: ?Sized + Serialize>(&mut self, key: &'static str, value: &T) -> Result<()> {
 		self.add_entry(key, value)
 	}
 
@@ -166,11 +167,11 @@ impl ser::SerializeStruct for NamedSliceSerializer<'_> {
 	}
 }
 
-impl ser::SerializeStructVariant for NamedSliceSerializer<'_> {
+impl SerializeStructVariant for NamedSliceSerializer<'_> {
 	type Ok = NamedParamSlice;
 	type Error = Error;
 
-	fn serialize_field<T: ?Sized + serde::Serialize>(&mut self, key: &'static str, value: &T) -> Result<()> {
+	fn serialize_field<T: ?Sized + Serialize>(&mut self, key: &'static str, value: &T) -> Result<()> {
 		self.add_entry(key, value)
 	}
 
@@ -181,16 +182,16 @@ impl ser::SerializeStructVariant for NamedSliceSerializer<'_> {
 
 struct ColumNameSerializer;
 
-impl ser::Serializer for ColumNameSerializer {
+impl Serializer for ColumNameSerializer {
 	type Ok = String;
 	type Error = Error;
-	type SerializeSeq = ser::Impossible<Self::Ok, Self::Error>;
-	type SerializeTuple = ser::Impossible<Self::Ok, Self::Error>;
-	type SerializeTupleStruct = ser::Impossible<Self::Ok, Self::Error>;
-	type SerializeTupleVariant = ser::Impossible<Self::Ok, Self::Error>;
-	type SerializeMap = ser::Impossible<Self::Ok, Self::Error>;
-	type SerializeStruct = ser::Impossible<Self::Ok, Self::Error>;
-	type SerializeStructVariant = ser::Impossible<Self::Ok, Self::Error>;
+	type SerializeSeq = Impossible<Self::Ok, Self::Error>;
+	type SerializeTuple = Impossible<Self::Ok, Self::Error>;
+	type SerializeTupleStruct = Impossible<Self::Ok, Self::Error>;
+	type SerializeTupleVariant = Impossible<Self::Ok, Self::Error>;
+	type SerializeMap = Impossible<Self::Ok, Self::Error>;
+	type SerializeStruct = Impossible<Self::Ok, Self::Error>;
+	type SerializeStructVariant = Impossible<Self::Ok, Self::Error>;
 
 	fn serialize_char(self, v: char) -> Result<Self::Ok> {
 		Ok(v.to_string())
@@ -216,7 +217,7 @@ impl ser::Serializer for ColumNameSerializer {
 	fn serialize_none(self) -> Result<Self::Ok> {
 		Err(Error::ser_unsupported("None"))
 	}
-	fn serialize_some<T: ?Sized + serde::Serialize>(self, _value: &T) -> Result<Self::Ok> {
+	fn serialize_some<T: ?Sized + Serialize>(self, _value: &T) -> Result<Self::Ok> {
 		Err(Error::ser_unsupported("Some"))
 	}
 	fn serialize_unit(self) -> Result<Self::Ok> {
@@ -228,10 +229,10 @@ impl ser::Serializer for ColumNameSerializer {
 	fn serialize_unit_variant(self, _name: &'static str, _variant_index: u32, _variant: &'static str) -> Result<Self::Ok> {
 		Err(Error::ser_unsupported("unit_variant"))
 	}
-	fn serialize_newtype_struct<T: ?Sized + serde::Serialize>(self, _name: &'static str, _value: &T) -> Result<Self::Ok> {
+	fn serialize_newtype_struct<T: ?Sized + Serialize>(self, _name: &'static str, _value: &T) -> Result<Self::Ok> {
 		Err(Error::ser_unsupported("newtype_struct"))
 	}
-	fn serialize_newtype_variant<T: ?Sized + serde::Serialize>(
+	fn serialize_newtype_variant<T: ?Sized + Serialize>(
 		self,
 		_name: &'static str,
 		_variant_index: u32,

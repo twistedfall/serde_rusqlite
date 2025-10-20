@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use rusqlite::{Row, Rows};
-use serde::de::DeserializeOwned;
+use serde_core::de::DeserializeOwned;
 
 use crate::{Error, Result};
 
@@ -68,7 +68,7 @@ fn deser_row<D: DeserializeOwned>(row: rusqlite::Result<Option<&Row>>, columns: 
 	}
 }
 
-fn columns_from_rows(rows: &rusqlite::Rows) -> Option<Vec<String>> {
+fn columns_from_rows(rows: &Rows) -> Option<Vec<String>> {
 	rows.as_ref().map(|stmt| {
 		let len = stmt.column_count();
 		let mut out = Vec::with_capacity(len);

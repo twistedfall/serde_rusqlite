@@ -1,6 +1,6 @@
 use std::{error::Error as StdError, fmt, result};
 
-use serde::{de, ser};
+use serde_core::{de, ser};
 
 #[derive(Debug)]
 pub enum Error {
