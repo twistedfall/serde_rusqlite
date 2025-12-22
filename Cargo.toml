@@ -16,7 +16,7 @@ exclude = ["/.github", "/tools", "/Cargo.lock", ".gitignore", "README.tpl", "rel
 maintenance = { status = "passively-maintained" }
 
 [dependencies]
-rusqlite = "0.37"
+rusqlite = "0.38"
 serde_core = "1"
 
 [dev-dependencies]
