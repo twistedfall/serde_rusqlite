@@ -15,6 +15,9 @@ exclude = ["/.github", "/tools", "/Cargo.lock", ".gitignore", "README.tpl", "rel
 [badges]
 maintenance = { status = "passively-maintained" }
 
+[features]
+rusqlite_fallible_uint = ["rusqlite/fallible_uint"]
+
 [dependencies]
 rusqlite = "0.38"
 serde_core = "1"
