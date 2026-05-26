@@ -19,7 +19,7 @@ maintenance = { status = "passively-maintained" }
 rusqlite_fallible_uint = ["rusqlite/fallible_uint"]
 
 [dependencies]
-rusqlite = "0.39"
+rusqlite = "0.40"
 serde_core = "1"
 
 [dev-dependencies]
