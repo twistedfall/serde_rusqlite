@@ -17,7 +17,7 @@ cargo add serde_rusqlite
 Or add to your Cargo.toml:
 ```toml
 [dependencies]
-serde_rusqlite = "0.43.0"
+serde_rusqlite = "0.44.0"
 ```
 
 ## Serde Rusqlite

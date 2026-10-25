@@ -1,6 +1,6 @@
 [package]
 name = "serde_rusqlite"
-version = "0.43.0"
+version = "0.44.0"
 edition = "2021"
 rust-version = "1.95.0"
 description = "Serialize/deserialize rusqlite rows"
