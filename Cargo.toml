@@ -20,7 +20,7 @@ rusqlite_fallible_uint = ["rusqlite/fallible_uint"]
 rusqlite_bundled_sqlcipher = ["rusqlite/bundled-sqlcipher"]
 
 [dependencies]
-rusqlite = "0.40"
+rusqlite = "0.41"
 serde_core = "1"
 
 [dev-dependencies]

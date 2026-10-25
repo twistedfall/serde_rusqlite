@@ -123,7 +123,7 @@ pub mod ser;
 /// of [rusqlite::Statement].
 #[inline]
 pub fn columns_from_statement(stmt: &rusqlite::Statement) -> Vec<String> {
-	stmt.column_names().into_iter().map(str::to_owned).collect()
+	stmt.column_names().map(str::to_owned).collect()
 }
 
 /// Deserializes an instance of `D:`[serde::Deserialize] from [rusqlite::Row]
@@ -135,7 +135,7 @@ pub fn columns_from_statement(stmt: &rusqlite::Statement) -> Vec<String> {
 #[inline]
 pub fn from_row<D: DeserializeOwned>(row: &rusqlite::Row) -> Result<D> {
 	let columns = row.as_ref().column_names();
-	let columns_ref = columns.iter().map(|x| x.to_string()).collect::<Vec<_>>();
+	let columns_ref = columns.map(|x| x.to_string()).collect::<Vec<_>>();
 	from_row_with_columns(row, &columns_ref)
 }
 
